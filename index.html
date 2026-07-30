@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Хавтан Зүсэлт Тооцоолуур Pro v1.8</title>
+  <title>Хавтан Зүсэлт Тооцоолуур Pro v1.9</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
@@ -43,10 +43,10 @@
     .status-success { background: #e6f4ea; color: #137333; }
     .status-error { background: #fce8e6; color: #c5221f; border: 1px solid #ea4335; }
 
-    /* Улаан тодорч харагдах багтаагүй деталуудын хэсэг */
+    /* Багтаагүй деталийг гэрэлтүүлж харуулах хэсэг */
     .unplaced-box { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
-    .unplaced-badge { background: #ea4335; color: white; padding: 6px 12px; border-radius: 6px; font-weight: bold; font-size: 13px; box-shadow: 0 0 8px rgba(234, 67, 53, 0.6); animation: blink 1.5s infinite alternate; }
-    @keyframes blink { 0% { opacity: 0.8; } 100% { opacity: 1; transform: scale(1.02); } }
+    .unplaced-badge { background: #ea4335; color: white; padding: 6px 12px; border-radius: 6px; font-weight: bold; font-size: 13px; box-shadow: 0 0 10px rgba(234, 67, 53, 0.8); animation: pulse 1.2s infinite alternate; }
+    @keyframes pulse { 0% { transform: scale(1); opacity: 0.85; } 100% { transform: scale(1.05); opacity: 1; } }
 
     @media print {
       body * { visibility: hidden; }
@@ -58,7 +58,7 @@
 </head>
 <body>
 
-  <h2>✂️ Хавтан Өрөлтийн Тооцоолуур Pro <span style="font-size: 14px; color: #1a73e8; font-weight: normal;">v1.8</span></h2>
+  <h2>✂️ Хавтан Өрөлтийн Тооцоолуур Pro <span style="font-size: 14px; color: #1a73e8; font-weight: normal;">v1.9</span></h2>
 
   <div class="data-tools">
     <button class="btn-tool btn-copy" onclick="copyDataText()">📋 Текст хуулах</button>
@@ -118,7 +118,7 @@
     let activeTabId = null;
 
     function initData() {
-      const savedSheets = localStorage.getItem('cut_sheets_v1_8');
+      const savedSheets = localStorage.getItem('cut_sheets_v1_9');
 
       if (savedSheets) {
         sheetsData = JSON.parse(savedSheets);
@@ -165,7 +165,7 @@
 
     function autoSave() {
       saveCurrentTabFields();
-      localStorage.setItem('cut_sheets_v1_8', JSON.stringify(sheetsData));
+      localStorage.setItem('cut_sheets_v1_9', JSON.stringify(sheetsData));
     }
 
     function saveCurrentTabFields() {
@@ -331,7 +331,7 @@
           if (Array.isArray(imported)) {
             sheetsData = imported;
             activeTabId = sheetsData[0].id;
-            localStorage.setItem('cut_sheets_v1_8', JSON.stringify(sheetsData));
+            localStorage.setItem('cut_sheets_v1_9', JSON.stringify(sheetsData));
             renderTabs();
             clearResults();
             alert("✅ Хэмжээнүүд амжилттай солигдлоо!");
@@ -387,7 +387,7 @@
       reader.readAsArrayBuffer(file);
     }
 
-    // MULTI-TRIAL GUILLOTINE PACKING ALGORITHM
+    // MULTI-STRATEGY ADVANCED PACKING ALGORITHM
     function calculateNesting() {
       autoSave();
 
@@ -421,25 +421,30 @@
         }
       });
 
-      // Хэд хэдэн эрэмбэлэх болон огтлох стратегиудаар суулгаж харьцуулна
+      // Олон төрлийн эрэмбэлэх болон split хийх алгоритмуудаар туршиж 100% багтах сонголтыг олно
       let bestResult = null;
-      let minRemaining = Infinity;
+      let minUnplacedCount = Infinity;
 
-      let packStrategies = [
+      let sortRules = [
         (a, b) => (Math.max(b.w, b.h) - Math.max(a.w, a.h)) || (b.w * b.h - a.w * a.h),
         (a, b) => (b.w * b.h - a.w * a.h),
         (a, b) => (b.w - a.w) || (b.h - a.h),
         (a, b) => (b.h - a.h) || (b.w - a.w),
-        (a, b) => (Math.min(b.w, b.h) - Math.min(a.w, a.h))
+        (a, b) => (Math.min(b.w, b.h) - Math.min(a.w, a.h)),
+        (a, b) => (a.w * a.h - b.w * b.h) // жижгээс нь том руу (зарим тохиолдолд сул зайг оновчтой бөглөнө)
       ];
 
-      packStrategies.forEach(sortFn => {
-        let testList = [...basePartsList].sort(sortFn);
-        let res = packGuillotineMulti(testList, sheetW, sheetH, kerf, currentSheet.count);
-        if (res.remaining.length < minRemaining) {
-          minRemaining = res.remaining.length;
-          bestResult = res;
-        }
+      let splitRules = ['short', 'long', 'horiz', 'vert'];
+
+      sortRules.forEach(sortFn => {
+        splitRules.forEach(splitMode => {
+          let testList = [...basePartsList].sort(sortFn);
+          let res = runGuillotineEngine(testList, sheetW, sheetH, kerf, currentSheet.count, splitMode);
+          if (res.remaining.length < minUnplacedCount) {
+            minUnplacedCount = res.remaining.length;
+            bestResult = res;
+          }
+        });
       });
 
       bestResult.sheets.forEach((placedParts, idx) => {
@@ -469,7 +474,7 @@
       document.getElementById('pdfBtn').style.display = "block";
     }
 
-    function packGuillotineMulti(partsList, sheetW, sheetH, kerf, maxSheets) {
+    function runGuillotineEngine(partsList, sheetW, sheetH, kerf, maxSheets, splitMode) {
       let remaining = [...partsList];
       let sheets = [];
 
@@ -483,29 +488,27 @@
           let bestFit = null;
           let bestNodeIndex = -1;
           let rotated = false;
-          let minShortSide = Infinity;
+          let minAreaFit = Infinity;
 
           for (let n = 0; n < freeNodes.length; n++) {
             let node = freeNodes[n];
 
+            // 1. Эргүүлээгүй байдлаар шалгах
             if (part.w <= node.w && part.h <= node.h) {
-              let leftoverX = node.w - part.w;
-              let leftoverY = node.h - part.h;
-              let shortSide = Math.min(leftoverX, leftoverY);
-              if (shortSide < minShortSide) {
-                minShortSide = shortSide;
+              let areaFit = node.w * node.h - part.w * part.h;
+              if (areaFit < minAreaFit) {
+                minAreaFit = areaFit;
                 bestFit = node;
                 bestNodeIndex = n;
                 rotated = false;
               }
             }
 
+            // 2. 90 градус эргүүлж шалгах
             if (part.h <= node.w && part.w <= node.h) {
-              let leftoverX = node.w - part.h;
-              let leftoverY = node.h - part.w;
-              let shortSide = Math.min(leftoverX, leftoverY);
-              if (shortSide < minShortSide) {
-                minShortSide = shortSide;
+              let areaFit = node.w * node.h - part.h * part.w;
+              if (areaFit < minAreaFit) {
+                minAreaFit = areaFit;
                 bestFit = node;
                 bestNodeIndex = n;
                 rotated = true;
@@ -529,16 +532,28 @@
             let wRemain = node.w - pw - kerf;
             let hRemain = node.h - ph - kerf;
 
-            if (wRemain > hRemain) {
-              if (wRemain > 0) freeNodes.push({ x: node.x + pw + kerf, y: node.y, w: wRemain, h: node.h });
-              if (hRemain > 0) freeNodes.push({ x: node.x, y: node.y + ph + kerf, w: pw, h: hRemain });
+            // Зүсэлтийн шугамын хуваалт (Split Mode)
+            let splitHoriz = false;
+            if (splitMode === 'short') {
+              splitHoriz = (node.w - pw) < (node.h - ph);
+            } else if (splitMode === 'long') {
+              splitHoriz = (node.w - pw) >= (node.h - ph);
+            } else if (splitMode === 'horiz') {
+              splitHoriz = true;
             } else {
-              if (hRemain > 0) freeNodes.push({ x: node.x, y: node.y + ph + kerf, w: node.w, h: hRemain });
+              splitHoriz = false;
+            }
+
+            if (splitHoriz) {
               if (wRemain > 0) freeNodes.push({ x: node.x + pw + kerf, y: node.y, w: wRemain, h: ph });
+              if (hRemain > 0) freeNodes.push({ x: node.x, y: node.y + ph + kerf, w: node.w, h: hRemain });
+            } else {
+              if (hRemain > 0) freeNodes.push({ x: node.x, y: node.y + ph + kerf, w: pw, h: hRemain });
+              if (wRemain > 0) freeNodes.push({ x: node.x + pw + kerf, y: node.y, w: wRemain, h: node.h });
             }
 
             remaining.splice(i, 1);
-            i = 0;
+            i = 0; // Дараагийн тохирох деталийг дахин эхнээс нь хайна
           } else {
             i++;
           }
