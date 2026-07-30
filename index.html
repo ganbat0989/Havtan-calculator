@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Хавтан Зүсэлт Тооцоолуур Pro v1.4</title>
+  <title>Хавтан Зүсэлт Тооцоолуур Pro v1.5</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
@@ -53,7 +53,7 @@
 </head>
 <body>
 
-  <h2>✂️ Хавтан Өрөлтийн Тооцоолуур Pro <span style="font-size: 14px; color: #1a73e8; font-weight: normal;">v1.4</span></h2>
+  <h2>✂️ Хавтан Өрөлтийн Тооцоолуур Pro <span style="font-size: 14px; color: #1a73e8; font-weight: normal;">v1.5</span></h2>
 
   <div class="data-tools">
     <button class="btn-tool btn-copy" onclick="copyDataText()">📋 Текст хуулах</button>
@@ -65,7 +65,7 @@
   <div class="card">
     <div class="tabs-header" id="tabsHeader"></div>
     
-    <h3>1. Үндсэн хавтан ба эмжээрийн тохиргоо</h3>
+    <h3>1. Үндсэн хавтан ба тохиргоо</h3>
     <div id="tabContent">
       <div class="input-group">
         <label>Хавтан нэр:</label>
@@ -85,19 +85,19 @@
       </div>
       <div class="input-group">
         <label>Эмжээр (мм):</label>
-        <input type="number" id="edgeVal" placeholder="4 талын эмжээр, ж нь: 2" value="0" oninput="autoSave()">
+        <input type="number" id="edgeVal" placeholder="Тал бүрийн эмжээр" value="0" oninput="autoSave()">
       </div>
       <button class="btn-delete" style="width:100%; margin-top:5px;" onclick="deleteCurrentTab()">🗑️ Энэ хавтанг устгах</button>
     </div>
   </div>
 
   <div class="card">
-    <h3 id="parts-header-title">2. Зүсэх деталь хэсгүүд (Бэлэн хэмжээгээр)</h3>
+    <h3 id="parts-header-title">2. Зүсэх деталь хэсгүүд</h3>
     <div id="parts-list"></div>
     <button class="btn-add" onclick="addPartInput()">+ Энэ хавтанд деталь нэмэх</button>
   </div>
 
-  <button class="main-btn" onclick="calculateNesting()">🧮 100% Багтаамжтай Өрөлт Хийх</button>
+  <button class="main-btn" onclick="calculateNesting()">🧮 MaxCut Түвшний Өрөлт Хийх</button>
 
   <div class="card canvas-container" style="margin-top: 20px;">
     <h3 id="result-header-title">3. Зүсэлтийн зураглал</h3>
@@ -113,7 +113,7 @@
     let activeTabId = null;
 
     function initData() {
-      const savedSheets = localStorage.getItem('cut_sheets_v1_4');
+      const savedSheets = localStorage.getItem('cut_sheets_v1_5');
 
       if (savedSheets) {
         sheetsData = JSON.parse(savedSheets);
@@ -126,7 +126,7 @@
             h: 2070, 
             count: 2, 
             kerf: 5,
-            edge: 2, // 4 талдаа 2мм эмжээр хасна
+            edge: 2,
             parts: [
               { w: 2775, h: 582, count: 1 },
               { w: 2775, h: 578, count: 2 },
@@ -148,7 +148,7 @@
 
     function autoSave() {
       saveCurrentTabFields();
-      localStorage.setItem('cut_sheets_v1_4', JSON.stringify(sheetsData));
+      localStorage.setItem('cut_sheets_v1_5', JSON.stringify(sheetsData));
     }
 
     function saveCurrentTabFields() {
@@ -313,7 +313,7 @@
           if (Array.isArray(imported)) {
             sheetsData = imported;
             activeTabId = sheetsData[0].id;
-            localStorage.setItem('cut_sheets_v1_4', JSON.stringify(sheetsData));
+            localStorage.setItem('cut_sheets_v1_5', JSON.stringify(sheetsData));
             renderTabs();
             clearResults();
             alert("✅ Хэмжээнүүд амжилттай солигдлоо!");
@@ -369,7 +369,7 @@
       reader.readAsArrayBuffer(file);
     }
 
-    // ADVANCED MAXCUT PACKING WITH EDGE STRIPPING
+    // REAL MAXCUT MAXRECTS PACKING ALGORITHM
     function calculateNesting() {
       autoSave();
 
@@ -381,12 +381,12 @@
 
       let sheetW = Math.max(currentSheet.w, currentSheet.h);
       let sheetH = Math.min(currentSheet.w, currentSheet.h);
-      let edge = currentSheet.edge || 0; // 4 талын эмжээр (мм)
+      let edge = currentSheet.edge || 0;
+      let kerf = currentSheet.kerf || 0;
 
       let partsList = [];
       (currentSheet.parts || []).forEach(p => {
         if (p.w && p.h && p.count) {
-          // Эмжээр наах тул үндсэн модны хэмжээнээс 2 талын эмжээр хасагдана
           let cutW = Math.max(10, p.w - (edge * 2));
           let cutH = Math.max(10, p.h - (edge * 2));
           
@@ -394,18 +394,16 @@
             partsList.push({ 
               w: cutW, 
               h: cutH, 
-              origW: p.w, 
-              origH: p.h, 
               label: `${p.w}x${p.h}` 
             });
           }
         }
       });
 
-      // Том ба урт деталуудыг эхэнд нь өрнө
+      // Хэвтээ ба том деталийг эхэнд өрнө
       partsList.sort((a, b) => (Math.max(b.w, b.h) - Math.max(a.w, a.h)) || ((b.w * b.h) - (a.w * a.h)));
 
-      let res = packMaxCutDeep(partsList, sheetW, sheetH, currentSheet.kerf, currentSheet.count);
+      let res = packMaxRects(partsList, sheetW, sheetH, kerf, currentSheet.count);
 
       res.sheets.forEach((placedParts, idx) => {
         renderSingleSheetCanvas(currentSheet.name, sheetW, sheetH, placedParts, idx + 1);
@@ -415,40 +413,41 @@
       statusDiv.style.display = "block";
       if(res.remaining.length > 0) {
         statusDiv.className = "status-msg status-error";
-        statusDiv.innerText = `⚠️ Анхаар: "${currentSheet.name}" хавтанд ${res.remaining.length} деталь багтсангүй!`;
+        statusDiv.innerText = `⚠️ Анхаар: Энэ өрөлтөөр ${res.remaining.length} деталь багталгүй үлдлээ!`;
       } else {
         statusDiv.className = "status-msg status-success";
-        statusDiv.innerText = `🎉 АМЖИЛТТАЙ! Бүх деталь (эмжээр -${edge*2}мм хасагдаад) ЯГ ${res.sheets.length} ХАВТАНД 100% БАГТЛАА!`;
+        statusDiv.innerText = `🎉 АМЖИЛТТАЙ (v1.5): Бүх деталь ЯГ ${res.sheets.length} ХАВТАНД 100% БАГТЛАА!`;
       }
 
       document.getElementById('pdfBtn').style.display = "block";
     }
 
-    function packMaxCutDeep(partsList, sheetW, sheetH, kerf, maxSheets) {
+    function packMaxRects(partsList, sheetW, sheetH, kerf, maxSheets) {
       let remaining = [...partsList];
       let sheets = [];
 
       while (remaining.length > 0 && sheets.length < maxSheets) {
         let placed = [];
-        let spaces = [{ x: 0, y: 0, w: sheetW, h: sheetH }];
+        let freeRects = [{ x: 0, y: 0, w: sheetW, h: sheetH }];
 
         let i = 0;
         while (i < remaining.length) {
           let part = remaining[i];
-          let fit = bestFitSpace(spaces, part);
+          let best = findBestRect(freeRects, part, kerf);
 
-          if (fit) {
+          if (best) {
             placed.push({
-              x: fit.x,
-              y: fit.y,
-              w: fit.useW,
-              h: fit.useH,
+              x: best.x,
+              y: best.y,
+              w: best.w,
+              h: best.h,
               label: part.label
             });
 
-            splitSpace(spaces, fit.idx, fit.x, fit.y, fit.useW, fit.useH, kerf);
+            // Сул зайг засах
+            splitFreeRects(freeRects, best.x, best.y, best.w, best.h, kerf);
             remaining.splice(i, 1);
-            i = 0; // Шинэ зайд давтан эхнээс хайна
+            i = 0; // Түрүүчийн зай задарсан тул дахин эхнээс нь хайна
           } else {
             i++;
           }
@@ -464,29 +463,29 @@
       return { sheets: sheets, remaining: remaining };
     }
 
-    function bestFitSpace(spaces, part) {
+    function findBestRect(freeRects, part, kerf) {
       let best = null;
-      let minShortSideFit = Infinity;
+      let minBSSF = Infinity; // Best Short Side Fit
 
-      spaces.forEach((sp, idx) => {
-        // Normal
-        if (part.w <= sp.w && part.h <= sp.h) {
-          let leftoverX = sp.w - part.w;
-          let leftoverY = sp.h - part.h;
+      freeRects.forEach(r => {
+        // Normal orientation
+        if (part.w <= r.w && part.h <= r.h) {
+          let leftoverX = r.w - part.w;
+          let leftoverY = r.h - part.h;
           let shortSide = Math.min(leftoverX, leftoverY);
-          if (shortSide < minShortSideFit) {
-            minShortSideFit = shortSide;
-            best = { idx: idx, x: sp.x, y: sp.y, useW: part.w, useH: part.h };
+          if (shortSide < minBSSF) {
+            minBSSF = shortSide;
+            best = { x: r.x, y: r.y, w: part.w, h: part.h };
           }
         }
-        // Rotated 90
-        if (part.h <= sp.w && part.w <= sp.h) {
-          let leftoverX = sp.w - part.h;
-          let leftoverY = sp.h - part.w;
+        // Rotated 90 degrees
+        if (part.h <= r.w && part.w <= r.h) {
+          let leftoverX = r.w - part.h;
+          let leftoverY = r.h - part.w;
           let shortSide = Math.min(leftoverX, leftoverY);
-          if (shortSide < minShortSideFit) {
-            minShortSideFit = shortSide;
-            best = { idx: idx, x: sp.x, y: sp.y, useW: part.h, useH: part.w };
+          if (shortSide < minBSSF) {
+            minBSSF = shortSide;
+            best = { x: r.x, y: r.y, w: part.h, h: part.w };
           }
         }
       });
@@ -494,21 +493,53 @@
       return best;
     }
 
-    function splitSpace(spaces, idx, x, y, w, h, kerf) {
-      let sp = spaces[idx];
-      spaces.splice(idx, 1);
+    function splitFreeRects(freeRects, px, py, pw, ph, kerf) {
+      let pwK = pw + kerf;
+      let phK = ph + kerf;
 
-      let rightW = sp.w - w - kerf;
-      let bottomH = sp.h - h - kerf;
+      for (let i = freeRects.length - 1; i >= 0; i--) {
+        let r = freeRects[i];
 
-      if (rightW > 0) {
-        spaces.push({ x: x + w + kerf, y: y, w: rightW, h: sp.h });
+        // Давхцаж байгаа эсэхийг шалгах
+        if (px < r.x + r.w && px + pwK > r.x && py < r.y + r.h && py + phK > r.y) {
+          // Баруун талын сул зай
+          if (px + pwK < r.x + r.w) {
+            freeRects.push({ x: px + pwK, y: r.y, w: r.x + r.w - (px + pwK), h: r.h });
+          }
+          // Зүүн талын сул зай
+          if (px > r.x && px < r.x + r.w) {
+            freeRects.push({ x: r.x, y: r.y, w: px - r.x, h: r.h });
+          }
+          // Доод талын сул зай
+          if (py + phK < r.y + r.h) {
+            freeRects.push({ x: r.x, y: py + phK, w: r.w, h: r.y + r.h - (py + phK) });
+          }
+          // Дээд талын сул зай
+          if (py > r.y && py < r.y + r.h) {
+            freeRects.push({ x: r.x, y: r.y, w: r.w, h: py - r.y });
+          }
+
+          freeRects.splice(i, 1);
+        }
       }
-      if (bottomH > 0) {
-        spaces.push({ x: x, y: y + h + kerf, w: w, h: bottomH });
-      }
 
-      spaces.sort((a, b) => (a.w * a.h) - (b.w * b.h));
+      // Дотор агуулагдсан илүүдэл сул зайнуудыг цэвэрлэх
+      for (let i = 0; i < freeRects.length; i++) {
+        for (let j = freeRects.length - 1; j > i; j--) {
+          if (isContained(freeRects[i], freeRects[j])) {
+            freeRects.splice(i, 1);
+            i--;
+            break;
+          }
+          if (isContained(freeRects[j], freeRects[i])) {
+            freeRects.splice(j, 1);
+          }
+        }
+      }
+    }
+
+    function isContained(a, b) {
+      return a.x >= b.x && a.y >= b.y && a.x + a.w <= b.x + b.w && a.y + a.h <= b.y + b.h;
     }
 
     function renderSingleSheetCanvas(sheetName, sheetW, sheetH, placedParts, sheetIndex) {
