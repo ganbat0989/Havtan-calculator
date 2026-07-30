@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Хавтан Зүсэлт Тооцоолуур Pro v1.1</title>
+  <title>Хавтан Зүсэлт Тооцоолуур Pro v1.3</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
@@ -53,7 +53,7 @@
 </head>
 <body>
 
-  <h2>✂️ Хавтан Өрөлтийн Тооцоолуур Pro <span style="font-size: 14px; color: #1a73e8; font-weight: normal;">v1.1</span></h2>
+  <h2>✂️ Хавтан Өрөлтийн Тооцоолуур Pro <span style="font-size: 14px; color: #1a73e8; font-weight: normal;">v1.3</span></h2>
 
   <div class="data-tools">
     <button class="btn-tool btn-copy" onclick="copyDataText()">📋 Текст хуулах</button>
@@ -93,7 +93,7 @@
     <button class="btn-add" onclick="addPartInput()">+ Энэ хавтанд деталь нэмэх</button>
   </div>
 
-  <button class="main-btn" onclick="calculateNesting()">🧮 Шулуун Зүсэлтээр Тооцоолох</button>
+  <button class="main-btn" onclick="calculateNesting()">🧮 Хөндлөн Өрөлтөөр Тооцоолох</button>
 
   <div class="card canvas-container" style="margin-top: 20px;">
     <h3 id="result-header-title">3. Зүсэлтийн зураглал</h3>
@@ -109,7 +109,7 @@
     let activeTabId = null;
 
     function initData() {
-      const savedSheets = localStorage.getItem('cut_sheets_v1_1');
+      const savedSheets = localStorage.getItem('cut_sheets_v1_3');
 
       if (savedSheets) {
         sheetsData = JSON.parse(savedSheets);
@@ -120,7 +120,7 @@
             name: "U325 ягаан", 
             w: 2800, 
             h: 2070, 
-            count: 4, 
+            count: 5, 
             kerf: 5,
             parts: [
               { w: 2775, h: 582, count: 1 },
@@ -131,7 +131,8 @@
               { w: 2775, h: 875, count: 1 },
               { w: 930, h: 582, count: 1 },
               { w: 1117, h: 578, count: 1 },
-              { w: 364, h: 578, count: 2 }
+              { w: 364, h: 578, count: 2 },
+              { w: 2775, h: 578, count: 1 }
             ]
           }
         ];
@@ -143,7 +144,7 @@
 
     function autoSave() {
       saveCurrentTabFields();
-      localStorage.setItem('cut_sheets_v1_1', JSON.stringify(sheetsData));
+      localStorage.setItem('cut_sheets_v1_3', JSON.stringify(sheetsData));
     }
 
     function saveCurrentTabFields() {
@@ -305,7 +306,7 @@
           if (Array.isArray(imported)) {
             sheetsData = imported;
             activeTabId = sheetsData[0].id;
-            localStorage.setItem('cut_sheets_v1_1', JSON.stringify(sheetsData));
+            localStorage.setItem('cut_sheets_v1_3', JSON.stringify(sheetsData));
             renderTabs();
             clearResults();
             alert("✅ Хэмжээнүүд амжилттай солигдлоо!");
@@ -361,7 +362,7 @@
       reader.readAsArrayBuffer(file);
     }
 
-    // MAXCUT STYLE VERTICAL STRIP PACKER
+    // LANDSCAPE GUILLOTINE PACKER
     function calculateNesting() {
       autoSave();
 
@@ -371,21 +372,25 @@
       const currentSheet = sheetsData.find(s => s.id === activeTabId);
       if (!currentSheet) return;
 
+      // Урт талыг заавал X буюу хэвтээ болгоно
+      let sheetW = Math.max(currentSheet.w, currentSheet.h);
+      let sheetH = Math.min(currentSheet.w, currentSheet.h);
+
       let partsList = [];
       (currentSheet.parts || []).forEach(p => {
         if (p.w && p.h && p.count) {
           for (let c = 0; c < p.count; c++) {
-            let maxDim = Math.max(p.w, p.h);
-            let minDim = Math.min(p.w, p.h);
-            partsList.push({ length: maxDim, width: minDim, label: `${p.w}x${p.h}` });
+            partsList.push({ w: p.w, h: p.h, label: `${p.w}x${p.h}` });
           }
         }
       });
 
-      let res = maxCutColumnPack(partsList, currentSheet);
+      partsList.sort((a, b) => (b.w * b.h) - (a.w * a.h));
+
+      let res = packAllSheets(partsList, sheetW, sheetH, currentSheet.kerf, currentSheet.count);
 
       res.sheets.forEach((placedParts, idx) => {
-        renderSingleSheetCanvas(currentSheet.name, currentSheet.w, currentSheet.h, placedParts, idx + 1);
+        renderSingleSheetCanvas(currentSheet.name, sheetW, sheetH, placedParts, idx + 1);
       });
 
       const statusDiv = document.getElementById('status');
@@ -395,83 +400,90 @@
         statusDiv.innerText = `⚠️ Анхаар: "${currentSheet.name}" хавтанд ${res.remaining.length} деталь багтсангүй!`;
       } else {
         statusDiv.className = "status-msg status-success";
-        statusDiv.innerText = `✅ MaxCut ЗҮСЭЛТ (v1.1): Бүх деталь яг ${res.sheets.length} хавтанд 100% багтлаа!`;
+        statusDiv.innerText = `✅ ХӨНДЛӨН ӨРӨЛТ (v1.3): Бүх деталь ${res.sheets.length} хавтанд 100% багтлаа!`;
       }
 
       document.getElementById('pdfBtn').style.display = "block";
     }
 
-    function maxCutColumnPack(inputParts, currentSheet) {
-      let remaining = [...inputParts];
-      // Эхлээд урлаар нь, дараа нь өргөнөөр нь эрэмбэлнэ
-      remaining.sort((a, b) => b.length - a.length || b.width - a.width);
-
-      let sheetLength = Math.max(currentSheet.w, currentSheet.h); // 2800
-      let sheetWidth = Math.min(currentSheet.w, currentSheet.h);  // 2070
-
+    function packAllSheets(partsList, sheetW, sheetH, kerf, maxCount) {
+      let remaining = [...partsList];
       let sheets = [];
 
-      while (remaining.length > 0 && sheets.length < currentSheet.count) {
-        let placedOnThisSheet = [];
-        let currentX = 0; // Өргөний дагуу явах X координатал (MaxCut layout)
+      while (remaining.length > 0 && sheets.length < maxCount) {
+        let placed = [];
+        let freeSpaces = [{ x: 0, y: 0, w: sheetW, h: sheetH }];
 
-        while (currentX < sheetWidth && remaining.length > 0) {
-          let columnParts = [];
-          let currentY = 0; // Уртын дагуу явах Y координатал
-          let colMaxWidth = 0;
+        let i = 0;
+        while (i < remaining.length) {
+          let part = remaining[i];
+          let bestFit = findBestSpace(freeSpaces, part);
 
-          let i = 0;
-          while (i < remaining.length) {
-            let p = remaining[i];
-
-            let fitNormal = (currentY + p.length <= sheetLength) && (currentX + Math.max(colMaxWidth, p.width) <= sheetWidth);
-            let fitRotated = (currentY + p.width <= sheetLength) && (currentX + Math.max(colMaxWidth, p.length) <= sheetWidth);
-
-            if (fitNormal || fitRotated) {
-              let useL = fitNormal ? p.length : p.width;
-              let useW = fitNormal ? p.width : p.length;
-
-              columnParts.push({
-                x: currentX,
-                y: currentY,
-                w: useW,
-                l: useL,
-                label: p.label
-              });
-
-              currentY += useL + currentSheet.kerf;
-              colMaxWidth = Math.max(colMaxWidth, useW);
-              remaining.splice(i, 1);
-            } else {
-              i++;
-            }
-          }
-
-          if (columnParts.length === 0) {
-            break;
-          }
-
-          columnParts.forEach(cp => {
-            placedOnThisSheet.push({
-              x: cp.x,
-              y: cp.y,
-              w: cp.w,
-              l: cp.l,
-              label: cp.label
+          if (bestFit) {
+            placed.push({
+              x: bestFit.x,
+              y: bestFit.y,
+              w: bestFit.useW,
+              h: bestFit.useH,
+              label: part.label
             });
-          });
 
-          currentX += colMaxWidth + currentSheet.kerf;
+            splitFreeSpace(freeSpaces, bestFit.spaceIndex, bestFit.x, bestFit.y, bestFit.useW, bestFit.useH, kerf);
+            remaining.splice(i, 1);
+          } else {
+            i++;
+          }
         }
 
-        if (placedOnThisSheet.length > 0) {
-          sheets.push(placedOnThisSheet);
+        if (placed.length > 0) {
+          sheets.push(placed);
         } else {
           break;
         }
       }
 
       return { sheets: sheets, remaining: remaining };
+    }
+
+    function findBestSpace(spaces, part) {
+      let best = null;
+      let minAreaDiff = Infinity;
+
+      spaces.forEach((space, idx) => {
+        if (part.w <= space.w && part.h <= space.h) {
+          let areaDiff = (space.w * space.h) - (part.w * part.h);
+          if (areaDiff < minAreaDiff) {
+            minAreaDiff = areaDiff;
+            best = { spaceIndex: idx, x: space.x, y: space.y, useW: part.w, useH: part.h };
+          }
+        }
+        if (part.h <= space.w && part.w <= space.h) {
+          let areaDiff = (space.w * space.h) - (part.w * part.h);
+          if (areaDiff < minAreaDiff) {
+            minAreaDiff = areaDiff;
+            best = { spaceIndex: idx, x: space.x, y: space.y, useW: part.h, useH: part.w };
+          }
+        }
+      });
+
+      return best;
+    }
+
+    function splitFreeSpace(spaces, spaceIdx, x, y, w, h, kerf) {
+      let space = spaces[spaceIdx];
+      spaces.splice(spaceIdx, 1);
+
+      let rightW = space.w - w - kerf;
+      let bottomH = space.h - h - kerf;
+
+      if (rightW > 0) {
+        spaces.push({ x: x + w + kerf, y: y, w: rightW, h: space.h });
+      }
+      if (bottomH > 0) {
+        spaces.push({ x: x, y: y + h + kerf, w: w, h: bottomH });
+      }
+
+      spaces.sort((a, b) => (a.w * a.h) - (b.w * b.h));
     }
 
     function renderSingleSheetCanvas(sheetName, sheetW, sheetH, placedParts, sheetIndex) {
@@ -488,10 +500,10 @@
       const ctx = canvas.getContext('2d');
       
       const targetWidth = 1000;
-      const scale = targetWidth / sheetH; // X нь Sheet Width (2070), Y нь Sheet Length (2800)
+      const scale = targetWidth / sheetW;
       
       canvas.width = targetWidth;
-      canvas.height = sheetW * scale;
+      canvas.height = sheetH * scale;
 
       ctx.fillStyle = "#dcdde1";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -500,7 +512,7 @@
         let x = p.x * scale;
         let y = p.y * scale;
         let w = p.w * scale;
-        let h = p.l * scale;
+        let h = p.h * scale;
 
         ctx.fillStyle = "#1a73e8";
         ctx.fillRect(x, y, w, h);
