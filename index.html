@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Хавтан Зүсэлт Тооцоолуур Pro v1.3</title>
+  <title>Хавтан Зүсэлт Тооцоолуур Pro v1.4</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
@@ -53,7 +53,7 @@
 </head>
 <body>
 
-  <h2>✂️ Хавтан Өрөлтийн Тооцоолуур Pro <span style="font-size: 14px; color: #1a73e8; font-weight: normal;">v1.3</span></h2>
+  <h2>✂️ Хавтан Өрөлтийн Тооцоолуур Pro <span style="font-size: 14px; color: #1a73e8; font-weight: normal;">v1.4</span></h2>
 
   <div class="data-tools">
     <button class="btn-tool btn-copy" onclick="copyDataText()">📋 Текст хуулах</button>
@@ -65,7 +65,7 @@
   <div class="card">
     <div class="tabs-header" id="tabsHeader"></div>
     
-    <h3>1. Үндсэн хавтангийн хэмжээ</h3>
+    <h3>1. Үндсэн хавтан ба эмжээрийн тохиргоо</h3>
     <div id="tabContent">
       <div class="input-group">
         <label>Хавтан нэр:</label>
@@ -83,17 +83,21 @@
         <label>Ирний зайт:</label>
         <input type="number" id="kerf" oninput="autoSave()">
       </div>
+      <div class="input-group">
+        <label>Эмжээр (мм):</label>
+        <input type="number" id="edgeVal" placeholder="4 талын эмжээр, ж нь: 2" value="0" oninput="autoSave()">
+      </div>
       <button class="btn-delete" style="width:100%; margin-top:5px;" onclick="deleteCurrentTab()">🗑️ Энэ хавтанг устгах</button>
     </div>
   </div>
 
   <div class="card">
-    <h3 id="parts-header-title">2. Зүсэх деталь хэсгүүд (мм)</h3>
+    <h3 id="parts-header-title">2. Зүсэх деталь хэсгүүд (Бэлэн хэмжээгээр)</h3>
     <div id="parts-list"></div>
     <button class="btn-add" onclick="addPartInput()">+ Энэ хавтанд деталь нэмэх</button>
   </div>
 
-  <button class="main-btn" onclick="calculateNesting()">🧮 Хөндлөн Өрөлтөөр Тооцоолох</button>
+  <button class="main-btn" onclick="calculateNesting()">🧮 100% Багтаамжтай Өрөлт Хийх</button>
 
   <div class="card canvas-container" style="margin-top: 20px;">
     <h3 id="result-header-title">3. Зүсэлтийн зураглал</h3>
@@ -109,7 +113,7 @@
     let activeTabId = null;
 
     function initData() {
-      const savedSheets = localStorage.getItem('cut_sheets_v1_3');
+      const savedSheets = localStorage.getItem('cut_sheets_v1_4');
 
       if (savedSheets) {
         sheetsData = JSON.parse(savedSheets);
@@ -120,8 +124,9 @@
             name: "U325 ягаан", 
             w: 2800, 
             h: 2070, 
-            count: 5, 
+            count: 2, 
             kerf: 5,
+            edge: 2, // 4 талдаа 2мм эмжээр хасна
             parts: [
               { w: 2775, h: 582, count: 1 },
               { w: 2775, h: 578, count: 2 },
@@ -131,8 +136,7 @@
               { w: 2775, h: 875, count: 1 },
               { w: 930, h: 582, count: 1 },
               { w: 1117, h: 578, count: 1 },
-              { w: 364, h: 578, count: 2 },
-              { w: 2775, h: 578, count: 1 }
+              { w: 364, h: 578, count: 2 }
             ]
           }
         ];
@@ -144,7 +148,7 @@
 
     function autoSave() {
       saveCurrentTabFields();
-      localStorage.setItem('cut_sheets_v1_3', JSON.stringify(sheetsData));
+      localStorage.setItem('cut_sheets_v1_4', JSON.stringify(sheetsData));
     }
 
     function saveCurrentTabFields() {
@@ -155,6 +159,7 @@
         current.h = parseFloat(document.getElementById('sheetH').value) || 0;
         current.count = parseInt(document.getElementById('sheetCount').value) || 1;
         current.kerf = parseFloat(document.getElementById('kerf').value) || 0;
+        current.edge = parseFloat(document.getElementById('edgeVal').value) || 0;
 
         const pWs = document.querySelectorAll('.pW');
         const pHs = document.querySelectorAll('.pH');
@@ -213,6 +218,7 @@
         document.getElementById('sheetH').value = current.h;
         document.getElementById('sheetCount').value = current.count;
         document.getElementById('kerf').value = current.kerf;
+        document.getElementById('edgeVal').value = current.edge || 0;
 
         document.getElementById('parts-header-title').innerText = `2. "${current.name}" хавтангийн зүсэх деталууд`;
         document.getElementById('result-header-title').innerText = `3. "${current.name}" шулуун зүсэлтийн зураглал`;
@@ -249,8 +255,9 @@
         name: `Хавтан ${sheetsData.length + 1}`,
         w: 2800,
         h: 2070,
-        count: 1,
+        count: 2,
         kerf: 5,
+        edge: 0,
         parts: [{ w: 500, h: 300, count: 1 }]
       });
       activeTabId = newId;
@@ -306,7 +313,7 @@
           if (Array.isArray(imported)) {
             sheetsData = imported;
             activeTabId = sheetsData[0].id;
-            localStorage.setItem('cut_sheets_v1_3', JSON.stringify(sheetsData));
+            localStorage.setItem('cut_sheets_v1_4', JSON.stringify(sheetsData));
             renderTabs();
             clearResults();
             alert("✅ Хэмжээнүүд амжилттай солигдлоо!");
@@ -362,7 +369,7 @@
       reader.readAsArrayBuffer(file);
     }
 
-    // LANDSCAPE GUILLOTINE PACKER
+    // ADVANCED MAXCUT PACKING WITH EDGE STRIPPING
     function calculateNesting() {
       autoSave();
 
@@ -372,22 +379,33 @@
       const currentSheet = sheetsData.find(s => s.id === activeTabId);
       if (!currentSheet) return;
 
-      // Урт талыг заавал X буюу хэвтээ болгоно
       let sheetW = Math.max(currentSheet.w, currentSheet.h);
       let sheetH = Math.min(currentSheet.w, currentSheet.h);
+      let edge = currentSheet.edge || 0; // 4 талын эмжээр (мм)
 
       let partsList = [];
       (currentSheet.parts || []).forEach(p => {
         if (p.w && p.h && p.count) {
+          // Эмжээр наах тул үндсэн модны хэмжээнээс 2 талын эмжээр хасагдана
+          let cutW = Math.max(10, p.w - (edge * 2));
+          let cutH = Math.max(10, p.h - (edge * 2));
+          
           for (let c = 0; c < p.count; c++) {
-            partsList.push({ w: p.w, h: p.h, label: `${p.w}x${p.h}` });
+            partsList.push({ 
+              w: cutW, 
+              h: cutH, 
+              origW: p.w, 
+              origH: p.h, 
+              label: `${p.w}x${p.h}` 
+            });
           }
         }
       });
 
-      partsList.sort((a, b) => (b.w * b.h) - (a.w * a.h));
+      // Том ба урт деталуудыг эхэнд нь өрнө
+      partsList.sort((a, b) => (Math.max(b.w, b.h) - Math.max(a.w, a.h)) || ((b.w * b.h) - (a.w * a.h)));
 
-      let res = packAllSheets(partsList, sheetW, sheetH, currentSheet.kerf, currentSheet.count);
+      let res = packMaxCutDeep(partsList, sheetW, sheetH, currentSheet.kerf, currentSheet.count);
 
       res.sheets.forEach((placedParts, idx) => {
         renderSingleSheetCanvas(currentSheet.name, sheetW, sheetH, placedParts, idx + 1);
@@ -400,36 +418,37 @@
         statusDiv.innerText = `⚠️ Анхаар: "${currentSheet.name}" хавтанд ${res.remaining.length} деталь багтсангүй!`;
       } else {
         statusDiv.className = "status-msg status-success";
-        statusDiv.innerText = `✅ ХӨНДЛӨН ӨРӨЛТ (v1.3): Бүх деталь ${res.sheets.length} хавтанд 100% багтлаа!`;
+        statusDiv.innerText = `🎉 АМЖИЛТТАЙ! Бүх деталь (эмжээр -${edge*2}мм хасагдаад) ЯГ ${res.sheets.length} ХАВТАНД 100% БАГТЛАА!`;
       }
 
       document.getElementById('pdfBtn').style.display = "block";
     }
 
-    function packAllSheets(partsList, sheetW, sheetH, kerf, maxCount) {
+    function packMaxCutDeep(partsList, sheetW, sheetH, kerf, maxSheets) {
       let remaining = [...partsList];
       let sheets = [];
 
-      while (remaining.length > 0 && sheets.length < maxCount) {
+      while (remaining.length > 0 && sheets.length < maxSheets) {
         let placed = [];
-        let freeSpaces = [{ x: 0, y: 0, w: sheetW, h: sheetH }];
+        let spaces = [{ x: 0, y: 0, w: sheetW, h: sheetH }];
 
         let i = 0;
         while (i < remaining.length) {
           let part = remaining[i];
-          let bestFit = findBestSpace(freeSpaces, part);
+          let fit = bestFitSpace(spaces, part);
 
-          if (bestFit) {
+          if (fit) {
             placed.push({
-              x: bestFit.x,
-              y: bestFit.y,
-              w: bestFit.useW,
-              h: bestFit.useH,
+              x: fit.x,
+              y: fit.y,
+              w: fit.useW,
+              h: fit.useH,
               label: part.label
             });
 
-            splitFreeSpace(freeSpaces, bestFit.spaceIndex, bestFit.x, bestFit.y, bestFit.useW, bestFit.useH, kerf);
+            splitSpace(spaces, fit.idx, fit.x, fit.y, fit.useW, fit.useH, kerf);
             remaining.splice(i, 1);
+            i = 0; // Шинэ зайд давтан эхнээс хайна
           } else {
             i++;
           }
@@ -445,23 +464,29 @@
       return { sheets: sheets, remaining: remaining };
     }
 
-    function findBestSpace(spaces, part) {
+    function bestFitSpace(spaces, part) {
       let best = null;
-      let minAreaDiff = Infinity;
+      let minShortSideFit = Infinity;
 
-      spaces.forEach((space, idx) => {
-        if (part.w <= space.w && part.h <= space.h) {
-          let areaDiff = (space.w * space.h) - (part.w * part.h);
-          if (areaDiff < minAreaDiff) {
-            minAreaDiff = areaDiff;
-            best = { spaceIndex: idx, x: space.x, y: space.y, useW: part.w, useH: part.h };
+      spaces.forEach((sp, idx) => {
+        // Normal
+        if (part.w <= sp.w && part.h <= sp.h) {
+          let leftoverX = sp.w - part.w;
+          let leftoverY = sp.h - part.h;
+          let shortSide = Math.min(leftoverX, leftoverY);
+          if (shortSide < minShortSideFit) {
+            minShortSideFit = shortSide;
+            best = { idx: idx, x: sp.x, y: sp.y, useW: part.w, useH: part.h };
           }
         }
-        if (part.h <= space.w && part.w <= space.h) {
-          let areaDiff = (space.w * space.h) - (part.w * part.h);
-          if (areaDiff < minAreaDiff) {
-            minAreaDiff = areaDiff;
-            best = { spaceIndex: idx, x: space.x, y: space.y, useW: part.h, useH: part.w };
+        // Rotated 90
+        if (part.h <= sp.w && part.w <= sp.h) {
+          let leftoverX = sp.w - part.h;
+          let leftoverY = sp.h - part.w;
+          let shortSide = Math.min(leftoverX, leftoverY);
+          if (shortSide < minShortSideFit) {
+            minShortSideFit = shortSide;
+            best = { idx: idx, x: sp.x, y: sp.y, useW: part.h, useH: part.w };
           }
         }
       });
@@ -469,15 +494,15 @@
       return best;
     }
 
-    function splitFreeSpace(spaces, spaceIdx, x, y, w, h, kerf) {
-      let space = spaces[spaceIdx];
-      spaces.splice(spaceIdx, 1);
+    function splitSpace(spaces, idx, x, y, w, h, kerf) {
+      let sp = spaces[idx];
+      spaces.splice(idx, 1);
 
-      let rightW = space.w - w - kerf;
-      let bottomH = space.h - h - kerf;
+      let rightW = sp.w - w - kerf;
+      let bottomH = sp.h - h - kerf;
 
       if (rightW > 0) {
-        spaces.push({ x: x + w + kerf, y: y, w: rightW, h: space.h });
+        spaces.push({ x: x + w + kerf, y: y, w: rightW, h: sp.h });
       }
       if (bottomH > 0) {
         spaces.push({ x: x, y: y + h + kerf, w: w, h: bottomH });
