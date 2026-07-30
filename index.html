@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Хавтан Зүсэлт Тооцоолуур Pro v2.8</title>
+  <title>Хавтан Зүсэлт Тооцоолуур Pro v2.9</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
@@ -64,7 +64,7 @@
 </head>
 <body>
 
-  <h2>✂️ Хавтан Өрөлтийн Тооцоолуур Pro <span style="font-size: 14px; color: #1a73e8; font-weight: normal;">v2.8</span></h2>
+  <h2>✂️ Хавтан Өрөлтийн Тооцоолуур Pro <span style="font-size: 14px; color: #1a73e8; font-weight: normal;">v2.9</span></h2>
 
   <!-- FREEZE / STICKY SECTION -->
   <div class="sticky-header-container">
@@ -140,7 +140,8 @@
     let activeTabId = null;
 
     function initData() {
-      const savedSheets = localStorage.getItem('cut_sheets_v2_8');
+      // Хуучин хувилбаруудын өгөгдлийг алдахгүйн тулд шалгаж татаж авна
+      const savedSheets = localStorage.getItem('cut_sheets_v2_9') || localStorage.getItem('cut_sheets_v2_8');
 
       if (savedSheets) {
         sheetsData = JSON.parse(savedSheets);
@@ -148,17 +149,13 @@
         sheetsData = [
           { 
             id: 1, 
-            name: "u325 (4 Хавтан)", 
+            name: "Хавтан 1", 
             w: 2800, 
             h: 2070, 
             count: 4, 
             kerf: 5,
             edge: 2,
-            parts: [
-              { w: 2775, h: 582, count: 1, eU1: true, eU2: true, eO1: true, eO2: true },
-              { w: 2775, h: 578, count: 2, eU1: true, eU2: true, eO1: true, eO2: false },
-              { w: 840, h: 100, count: 1, eU1: true, eU2: false, eO1: false, eO2: false }
-            ]
+            parts: []
           }
         ];
       }
@@ -169,7 +166,7 @@
 
     function autoSave() {
       saveCurrentTabFields();
-      localStorage.setItem('cut_sheets_v2_8', JSON.stringify(sheetsData));
+      localStorage.setItem('cut_sheets_v2_9', JSON.stringify(sheetsData));
     }
 
     function autoSaveAndRefresh() {
@@ -260,7 +257,7 @@
         document.getElementById('sheetW').value = current.w;
         document.getElementById('sheetH').value = current.h;
         document.getElementById('sheetCount').value = current.count;
-        document.getElementById('kerf').value = current.kerf || 5;
+        document.getElementById('kerf').value = current.kerf !== undefined ? current.kerf : 5;
         document.getElementById('edgeVal').value = current.edge !== undefined ? current.edge : 2;
 
         document.getElementById('parts-header-title').innerText = `2. "${current.name}" деталууд`;
@@ -325,7 +322,7 @@
         count: 4,
         kerf: 5,
         edge: 2,
-        parts: [{ w: 500, h: 300, count: 1, eU1: true, eU2: true, eO1: true, eO2: true }]
+        parts: []
       });
       activeTabId = newId;
       renderTabs();
