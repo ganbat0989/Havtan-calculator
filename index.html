@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Хавтан Зүсэлт Тооцоолуур Pro v2.9.1</title>
+  <title>Хавтан Зүсэлт Тооцоолуур Pro v3.0</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
@@ -29,8 +29,8 @@
     .input-wrapper { position: relative; flex: 1; display: flex; flex-direction: column; }
     .input-wrapper label { font-size: 10px; font-weight: bold; color: #666; margin-bottom: 2px; }
 
-    .edge-selectors { display: flex; gap: 4px; align-items: center; background: #eef3fc; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; color: #1a73e8; }
-    .edge-selectors label { display: flex; align-items: center; cursor: pointer; }
+    .edge-selectors, .extra-selectors { display: flex; gap: 6px; align-items: center; background: #eef3fc; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; color: #1a73e8; }
+    .edge-selectors label, .extra-selectors label { display: flex; align-items: center; cursor: pointer; gap: 2px; }
 
     .cut-size-display { font-size: 12px; font-weight: bold; color: #d93025; background: #fce8e6; padding: 6px 10px; border-radius: 6px; white-space: nowrap; }
 
@@ -64,7 +64,7 @@
 </head>
 <body>
 
-  <h2>✂️ Хавтан Өрөлтийн Тооцоолуур Pro <span style="font-size: 14px; color: #1a73e8; font-weight: normal;">v2.9.1</span></h2>
+  <h2>✂️ Хавтан Өрөлтийн Тооцоолуур Pro <span style="font-size: 14px; color: #1a73e8; font-weight: normal;">v3.0</span></h2>
 
   <!-- FREEZE / STICKY SECTION -->
   <div class="sticky-header-container">
@@ -101,6 +101,10 @@
           <div class="input-wrapper">
             <label>Эмжээр (мм):</label>
             <input type="number" id="edgeVal" placeholder="Эмжээр (мм)" oninput="autoSaveAndRefresh()">
+          </div>
+          <div class="input-wrapper">
+            <label>Хавхлага/Хаалга хоорондын зай (мм):</label>
+            <input type="number" id="doorGap" placeholder="Зай (мм)" oninput="autoSaveAndRefresh()">
           </div>
         </div>
       </div>
@@ -140,10 +144,9 @@
     let activeTabId = null;
 
     function initData() {
-      // Бүх боломжит хуучин түлхүүрүүдээс өгөгдлийг хайж олох
-      const savedSheets = localStorage.getItem('cut_sheets_v2_9') || 
-                          localStorage.getItem('cut_sheets_v2_8') || 
-                          localStorage.getItem('cut_sheets_v2_7');
+      const savedSheets = localStorage.getItem('cut_sheets_v3_0') || 
+                          localStorage.getItem('cut_sheets_v2_9') || 
+                          localStorage.getItem('cut_sheets_v2_8');
 
       if (savedSheets) {
         try {
@@ -163,6 +166,7 @@
             count: 4, 
             kerf: 5,
             edge: 2,
+            doorGap: 2,
             parts: []
           }
         ];
@@ -174,7 +178,7 @@
 
     function autoSave() {
       saveCurrentTabFields();
-      localStorage.setItem('cut_sheets_v2_9', JSON.stringify(sheetsData));
+      localStorage.setItem('cut_sheets_v3_0', JSON.stringify(sheetsData));
     }
 
     function autoSaveAndRefresh() {
@@ -192,6 +196,7 @@
         current.count = parseInt(document.getElementById('sheetCount').value) || 1;
         current.kerf = parseFloat(document.getElementById('kerf').value) || 5;
         current.edge = parseFloat(document.getElementById('edgeVal').value) || 0;
+        current.doorGap = parseFloat(document.getElementById('doorGap').value) || 0;
 
         const pWs = document.querySelectorAll('.pW');
         const pHs = document.querySelectorAll('.pH');
@@ -200,6 +205,8 @@
         const eU2s = document.querySelectorAll('.eU2');
         const eO1s = document.querySelectorAll('.eO1');
         const eO2s = document.querySelectorAll('.eO2');
+        const hasEdges = document.querySelectorAll('.hasEdge');
+        const isDoors = document.querySelectorAll('.isDoor');
 
         current.parts = [];
         for (let i = 0; i < pWs.length; i++) {
@@ -207,6 +214,8 @@
             w: parseFloat(pWs[i].value) || 0,
             h: parseFloat(pHs[i].value) || 0,
             count: parseInt(pCounts[i].value) || 1,
+            hasEdge: hasEdges[i] ? hasEdges[i].checked : true,
+            isDoor: isDoors[i] ? isDoors[i].checked : false,
             eU1: eU1s[i] ? eU1s[i].checked : false,
             eU2: eU2s[i] ? eU2s[i].checked : false,
             eO1: eO1s[i] ? eO1s[i].checked : false,
@@ -267,6 +276,7 @@
         document.getElementById('sheetCount').value = current.count;
         document.getElementById('kerf').value = current.kerf !== undefined ? current.kerf : 5;
         document.getElementById('edgeVal').value = current.edge !== undefined ? current.edge : 2;
+        document.getElementById('doorGap').value = current.doorGap !== undefined ? current.doorGap : 2;
 
         document.getElementById('parts-header-title').innerText = `2. "${current.name}" деталууд`;
         document.getElementById('result-header-title').innerText = `3. "${current.name}" зүсэлтийн зураглал`;
@@ -279,10 +289,27 @@
       const container = document.getElementById('parts-list');
       container.innerHTML = "";
       const edgeThickness = parseFloat(document.getElementById('edgeVal').value) || 0;
+      const doorGapVal = parseFloat(document.getElementById('doorGap').value) || 0;
 
       parts.forEach((p, idx) => {
-        let cutW = p.w - ((p.eO1 ? edgeThickness : 0) + (p.eO2 ? edgeThickness : 0));
-        let cutH = p.h - ((p.eU1 ? edgeThickness : 0) + (p.eU2 ? edgeThickness : 0));
+        // Утгуудын анхны утга байхгүй бол стандарт утга оноох
+        if (p.hasEdge === undefined) p.hasEdge = true;
+        if (p.isDoor === undefined) p.isDoor = false;
+
+        let cutW = p.w;
+        let cutH = p.h;
+
+        // Хэрэв эмжээр наах эсэх сонгогдсон бол хэмжээнээс хасна
+        if (p.hasEdge) {
+          cutW -= ((p.eO1 ? edgeThickness : 0) + (p.eO2 ? edgeThickness : 0));
+          cutH -= ((p.eU1 ? edgeThickness : 0) + (p.eU2 ? edgeThickness : 0));
+        }
+
+        // Хэрэв хаалга бол хаалга хоорондын зайг хасна
+        if (p.isDoor && doorGapVal > 0) {
+          cutW -= doorGapVal;
+          cutH -= doorGapVal;
+        }
 
         const div = document.createElement('div');
         div.className = 'input-group part-item';
@@ -295,8 +322,13 @@
           <input type="number" class="pCount inp-count" placeholder="Тоо" value="${p.count}" oninput="updateItemAndSave()">
           <span>ш</span>
 
-          <div class="edge-selectors">
-            <span>Эмжээр:</span>
+          <div class="extra-selectors">
+            <label><input type="checkbox" class="hasEdge" ${p.hasEdge ? 'checked' : ''} onchange="toggleEdgeUI(${idx}, this.checked)"> Эмжээр</label>
+            <label><input type="checkbox" class="isDoor" ${p.isDoor ? 'checked' : ''} onchange="updateItemAndSave()"> Хаалга</label>
+          </div>
+
+          <div class="edge-selectors" id="edgeBox_${idx}" style="display: ${p.hasEdge ? 'flex' : 'none'};">
+            <span>Ирмэг:</span>
             <label><input type="checkbox" class="eU1" ${p.eU1 ? 'checked' : ''} onchange="updateItemAndSave()"> У1</label>
             <label><input type="checkbox" class="eU2" ${p.eU2 ? 'checked' : ''} onchange="updateItemAndSave()"> У2</label>
             <label><input type="checkbox" class="eO1" ${p.eO1 ? 'checked' : ''} onchange="updateItemAndSave()"> Ө1</label>
@@ -311,6 +343,14 @@
       });
 
       updateBadges(parts);
+    }
+
+    function toggleEdgeUI(idx, isChecked) {
+      const edgeBox = document.getElementById(`edgeBox_${idx}`);
+      if (edgeBox) {
+        edgeBox.style.display = isChecked ? 'flex' : 'none';
+      }
+      updateItemAndSave();
     }
 
     function updateItemAndSave() {
@@ -330,6 +370,7 @@
         count: 4,
         kerf: 5,
         edge: 2,
+        doorGap: 2,
         parts: []
       });
       activeTabId = newId;
@@ -355,7 +396,7 @@
       const current = sheetsData.find(s => s.id === activeTabId);
       if (current) {
         if (!current.parts) current.parts = [];
-        current.parts.push({ w: 500, h: 300, count: 1, eU1: true, eU2: true, eO1: true, eO2: true });
+        current.parts.push({ w: 500, h: 300, count: 1, hasEdge: true, isDoor: false, eU1: true, eU2: true, eO1: true, eO2: true });
         renderParts(current.parts);
         autoSave();
       }
@@ -390,7 +431,7 @@
               let h = parseFloat(row[1]);
               let count = parseInt(row[2]) || 1;
               if (!isNaN(w) && !isNaN(h) && w > 0 && h > 0) {
-                importedParts.push({ w: w, h: h, count: count, eU1: true, eU2: true, eO1: true, eO2: true });
+                importedParts.push({ w: w, h: h, count: count, hasEdge: true, isDoor: false, eU1: true, eU2: true, eO1: true, eO2: true });
               }
             }
           });
@@ -425,6 +466,7 @@
       let sheetW = Math.max(currentSheet.w, currentSheet.h);
       let sheetH = Math.min(currentSheet.w, currentSheet.h);
       let edge = currentSheet.edge || 0;
+      let doorGap = currentSheet.doorGap || 0;
       let kerf = currentSheet.kerf || 5;
       let maxSheets = currentSheet.count;
 
@@ -432,8 +474,17 @@
       let partIdx = 1;
       (currentSheet.parts || []).forEach(p => {
         if (p.w && p.h && p.count) {
-          let cutW = p.w - ((p.eO1 ? edge : 0) + (p.eO2 ? edge : 0));
-          let cutH = p.h - ((p.eU1 ? edge : 0) + (p.eU2 ? edge : 0));
+          let cutW = p.w;
+          let cutH = p.h;
+
+          if (p.hasEdge) {
+            cutW -= ((p.eO1 ? edge : 0) + (p.eO2 ? edge : 0));
+            cutH -= ((p.eU1 ? edge : 0) + (p.eU2 ? edge : 0));
+          }
+          if (p.isDoor && doorGap > 0) {
+            cutW -= doorGap;
+            cutH -= doorGap;
+          }
           
           for (let c = 0; c < p.count; c++) {
             basePartsList.push({ 
