@@ -3,33 +3,42 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Хавтан Зүсэлт Тооцоолуур Pro v2.4</title>
+  <title>Хавтан Зүсэлт Тооцоолуур Pro v2.5</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
     body { padding: 15px; background: #f4f6f9; margin: 0; color: #333; }
     h2 { color: #1a73e8; text-align: center; margin-top: 5px; margin-bottom: 15px; font-size: 20px; }
-    .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 15px; }
+    
+    /* FREEZE / STICKY SECTION */
+    .sticky-header-container {
+      position: sticky;
+      top: 0;
+      z-index: 999;
+      background: #f4f6f9;
+      padding-top: 5px;
+      padding-bottom: 5px;
+    }
+
+    .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 15px; }
     .card h3 { margin-top: 0; font-size: 15px; color: #444; border-bottom: 2px solid #f0f2f5; padding-bottom: 8px; }
     
-    .summary-badge { display: flex; gap: 10px; margin-bottom: 15px; }
+    .summary-badge { display: flex; gap: 10px; margin-bottom: 10px; }
     .badge { flex: 1; background: #e8f0fe; color: #1a73e8; padding: 10px; border-radius: 8px; text-align: center; font-weight: bold; font-size: 13px; }
 
-    .data-tools { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; }
-    .btn-tool { flex: 1; min-width: 120px; padding: 10px 5px; border: none; border-radius: 8px; font-weight: bold; font-size: 12px; cursor: pointer; text-align: center; color: white; }
-    .btn-copy { background: #6c5ce7; }
-    .btn-paste { background: #00cec9; }
-    .btn-excel { background: #107c41; }
-
-    .tabs-header { display: flex; gap: 5px; overflow-x: auto; margin-bottom: 15px; border-bottom: 2px solid #ddd; padding-bottom: 5px; }
+    .tabs-header { display: flex; gap: 5px; overflow-x: auto; margin-bottom: 10px; border-bottom: 2px solid #ddd; padding-bottom: 5px; }
     .tab-btn { padding: 8px 14px; background: #e4e6eb; border: none; border-radius: 8px 8px 0 0; cursor: pointer; font-weight: bold; font-size: 13px; white-space: nowrap; }
     .tab-btn.active { background: #1a73e8; color: white; }
     .tab-add-btn { background: #34a853; color: white; border: none; border-radius: 8px; padding: 8px 12px; cursor: pointer; font-weight: bold; font-size: 13px; }
     
-    .input-group { display: flex; gap: 6px; margin-bottom: 10px; align-items: center; flex-wrap: nowrap; }
+    .input-group { display: flex; gap: 6px; margin-bottom: 8px; align-items: center; flex-wrap: nowrap; }
     .part-num { font-weight: bold; width: 32px; text-align: right; color: #1a73e8; font-size: 13px; }
-    input[type="number"], input[type="text"] { padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; flex: 1; min-width: 45px; outline: none; }
+    input[type="number"], input[type="text"] { padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; flex: 1; min-width: 45px; outline: none; }
     input:focus { border-color: #1a73e8; }
+
+    .parts-header-actions { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f0f2f5; padding-bottom: 8px; margin-bottom: 12px; }
+    .parts-header-actions h3 { margin: 0; border: none; padding: 0; }
+    .btn-excel-tab { background: #107c41; color: white; border: none; border-radius: 6px; padding: 6px 12px; font-weight: bold; font-size: 12px; cursor: pointer; }
 
     button.main-btn { width: 100%; padding: 14px; background: #1a73e8; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; font-weight: bold; }
     .btn-pdf { background: #ea4335; color: white; border: none; border-radius: 8px; width: 100%; padding: 12px; font-size: 15px; font-weight: bold; cursor: pointer; margin-bottom: 15px; display: none; }
@@ -59,50 +68,52 @@
 </head>
 <body>
 
-  <h2>✂️ Хавтан Өрөлтийн Тооцоолуур Pro <span style="font-size: 14px; color: #1a73e8; font-weight: normal;">v2.4</span></h2>
+  <h2>✂️ Хавтан Өрөлтийн Тооцоолуур Pro <span style="font-size: 14px; color: #1a73e8; font-weight: normal;">v2.5</span></h2>
 
-  <div class="data-tools">
-    <button class="btn-tool btn-copy" onclick="copyDataText()">📋 Текст хуулах</button>
-    <button class="btn-tool btn-paste" onclick="pasteDataText()">📥 Текст буулгах</button>
-    <button class="btn-tool btn-excel" onclick="document.getElementById('excelFileInput').click()">📊 Excel оруулж ирэх</button>
-    <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" style="display:none;" onchange="importExcelFile(event)">
-  </div>
+  <!-- FREEZE / STICKY SECTION (Хавтангийн тохиргоо + Тоо ширхэгийн мэдээлэл) -->
+  <div class="sticky-header-container">
+    <div class="card" style="margin-bottom: 0;">
+      <div class="tabs-header" id="tabsHeader"></div>
+      
+      <div id="tabContent">
+        <div class="input-group">
+          <label style="min-width:65px; font-size:12px; font-weight:bold;">Нэр:</label>
+          <input type="text" id="sheetName" oninput="autoSave()">
+          <button class="btn-delete" style="margin-left: 5px; padding: 6px 10px; font-size: 12px;" onclick="deleteCurrentTab()">🗑️ Устгах</button>
+        </div>
+        <div class="input-group">
+          <label style="min-width:65px; font-size:12px; font-weight:bold;">Урт (X):</label>
+          <input type="number" id="sheetW" oninput="autoSave()">
+          <label style="min-width:65px; font-size:12px; font-weight:bold;">Өргөн (Y):</label>
+          <input type="number" id="sheetH" oninput="autoSave()">
+        </div>
+        <div class="input-group">
+          <label style="min-width:65px; font-size:12px; font-weight:bold;">Хавтан тоо:</label>
+          <input type="number" id="sheetCount" min="1" oninput="autoSave()">
+          <label style="min-width:65px; font-size:12px; font-weight:bold;">Ир (мм):</label>
+          <input type="number" id="kerf" value="5" oninput="autoSave()">
+        </div>
+        <div class="input-group">
+          <label style="min-width:65px; font-size:12px; font-weight:bold;">Эмжээр:</label>
+          <input type="number" id="edgeVal" placeholder="4 талын мм" value="0" oninput="autoSave()">
+        </div>
+      </div>
 
-  <div class="card">
-    <div class="tabs-header" id="tabsHeader"></div>
-    
-    <h3>1. Үндсэн хавтан ба тохиргоо</h3>
-    <div id="tabContent">
-      <div class="input-group">
-        <label style="min-width:70px; font-size:12px; font-weight:bold;">Нэр:</label>
-        <input type="text" id="sheetName" oninput="autoSave()">
+      <!-- FREEZE РЕЖИМД БАЙГАА НЭР ТӨРӨЛ БА НИЙТ ШИРХЭГ -->
+      <div class="summary-badge" style="margin-top: 8px; margin-bottom: 0;">
+        <div class="badge" id="typeCountBadge">Нэр төрөл: 0</div>
+        <div class="badge" id="totalQtyBadge">Нийт ширхэг: 0 ш</div>
       </div>
-      <div class="input-group">
-        <label style="min-width:70px; font-size:12px; font-weight:bold;">Урт (X):</label>
-        <input type="number" id="sheetW" oninput="autoSave()">
-        <label style="min-width:70px; font-size:12px; font-weight:bold;">Өргөн (Y):</label>
-        <input type="number" id="sheetH" oninput="autoSave()">
-      </div>
-      <div class="input-group">
-        <label style="min-width:70px; font-size:12px; font-weight:bold;">Хавтан тоо:</label>
-        <input type="number" id="sheetCount" min="1" oninput="autoSave()">
-        <label style="min-width:70px; font-size:12px; font-weight:bold;">Ир (мм):</label>
-        <input type="number" id="kerf" value="5" oninput="autoSave()">
-      </div>
-      <div class="input-group">
-        <label style="min-width:70px; font-size:12px; font-weight:bold;">Эмжээр:</label>
-        <input type="number" id="edgeVal" placeholder="4 талын мм" value="0" oninput="autoSave()">
-      </div>
-      <button class="btn-delete" style="width:100%; margin-top:10px;" onclick="deleteCurrentTab()">🗑️ Энэ хавтанг устгах</button>
     </div>
   </div>
 
-  <div class="card">
-    <h3 id="parts-header-title">2. Зүсэх деталь хэсгүүд</h3>
-    
-    <div class="summary-badge">
-      <div class="badge" id="typeCountBadge">Нэр төрөл: 0</div>
-      <div class="badge" id="totalQtyBadge">Нийт ширхэг: 0 ш</div>
+  <!-- ДЕТАЛИЙН ХЕСЭГ -->
+  <div class="card" style="margin-top: 15px;">
+    <div class="parts-header-actions">
+      <h3 id="parts-header-title">2. Зүсэх деталь хэсгүүд</h3>
+      <!-- TAB БҮР ДЭЭР ТУСДАА АЖИЛЛАХ EXCEL ОРУУЛАХ ТОВЧ -->
+      <button class="btn-excel-tab" onclick="document.getElementById('excelFileInput').click()">📊 Excel оруулж ирэх</button>
+      <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" style="display:none;" onchange="importExcelFileForCurrentTab(event)">
     </div>
 
     <div id="parts-list"></div>
@@ -125,7 +136,7 @@
     let activeTabId = null;
 
     function initData() {
-      const savedSheets = localStorage.getItem('cut_sheets_v2_4');
+      const savedSheets = localStorage.getItem('cut_sheets_v2_5');
 
       if (savedSheets) {
         sheetsData = JSON.parse(savedSheets);
@@ -180,7 +191,7 @@
 
     function autoSave() {
       saveCurrentTabFields();
-      localStorage.setItem('cut_sheets_v2_4', JSON.stringify(sheetsData));
+      localStorage.setItem('cut_sheets_v2_5', JSON.stringify(sheetsData));
     }
 
     function saveCurrentTabFields() {
@@ -261,8 +272,8 @@
         document.getElementById('kerf').value = current.kerf || 5;
         document.getElementById('edgeVal').value = current.edge || 0;
 
-        document.getElementById('parts-header-title').innerText = `2. "${current.name}" хавтангийн зүсэх деталууд`;
-        document.getElementById('result-header-title').innerText = `3. "${current.name}" шулуун зүсэлтийн зураглал`;
+        document.getElementById('parts-header-title').innerText = `2. "${current.name}" деталууд`;
+        document.getElementById('result-header-title').innerText = `3. "${current.name}" зүсэлтийн зураглал`;
 
         renderParts(current.parts || []);
       }
@@ -343,31 +354,8 @@
       }
     }
 
-    function copyDataText() {
-      autoSave();
-      prompt("Доорх текстийг хуулж авна уу:", JSON.stringify(sheetsData));
-    }
-
-    function pasteDataText() {
-      const inputStr = prompt("Хуулсан текстээ энд буулгана уу:");
-      if (inputStr) {
-        try {
-          const imported = JSON.parse(inputStr);
-          if (Array.isArray(imported)) {
-            sheetsData = imported;
-            activeTabId = sheetsData[0].id;
-            localStorage.setItem('cut_sheets_v2_4', JSON.stringify(sheetsData));
-            renderTabs();
-            clearResults();
-            alert("✅ Амжилттай хуулагдлаа!");
-          }
-        } catch (err) {
-          alert("❌ Буруу текст байна!");
-        }
-      }
-    }
-
-    function importExcelFile(e) {
+    /* ИКТЕХ ХАВТАН/ТАБ БҮР ДЭЭР ТУСДАА ЭКСЕЛ ФАЙЛ ОРУУЛАХ */
+    function importExcelFileForCurrentTab(e) {
       const file = e.target.files[0];
       if (!file) return;
 
@@ -398,11 +386,11 @@
               renderParts(current.parts);
               autoSave();
               clearResults();
-              alert(`✅ Excel-ээс ${importedParts.length} деталь орууллаа!`);
+              alert(`✅ Энэ хавтанд Excel-ээс ${importedParts.length} деталь амжилттай орууллаа!`);
             }
           }
         } catch (err) {
-          alert("❌ Алдаа гарлаа!");
+          alert("❌ Excel файлыг уншихад алдаа гарлаа!");
         }
         document.getElementById('excelFileInput').value = "";
       };
@@ -421,7 +409,7 @@
       let sheetW = Math.max(currentSheet.w, currentSheet.h);
       let sheetH = Math.min(currentSheet.w, currentSheet.h);
       let edge = currentSheet.edge || 0;
-      let kerf = 5; // Ирийг байнга 5мм-ээр тохируулна
+      let kerf = currentSheet.kerf || 5;
       let maxSheets = currentSheet.count;
 
       let basePartsList = [];
@@ -446,13 +434,13 @@
       let bestResult = null;
       let minUnplacedCount = Infinity;
 
-      // MaxCut-тай адил олон төрлийн нарийн эрэмбэлэх шалгуурууд
+      // MaxCut шиг 100% багтаах 8 төрлийн туршилт
       let sortRules = [
         (a, b) => (Math.max(b.w, b.h) - Math.max(a.w, a.h)) || (b.w * b.h - a.w * a.h),
         (a, b) => (b.w * b.h - a.w * a.h),
         (a, b) => (b.w - a.w) || (b.h - a.h),
         (a, b) => (b.h - a.h) || (b.w - a.w),
-        (a, b) => (a.w * a.h - b.w * b.h)
+        (a, b) => (Math.min(b.w, b.h) - Math.min(a.w, a.h))
       ];
 
       let splitRules = ['short', 'long', 'horiz', 'vert'];
@@ -508,16 +496,19 @@
           let bestFit = null;
           let bestNodeIndex = -1;
           let rotated = false;
-          let minAreaFit = Infinity;
+          let minShortSide = Infinity;
 
           for (let n = 0; n < freeNodes.length; n++) {
             let node = freeNodes[n];
 
             // 1. Эргүүлээгүй
             if (part.w <= node.w && part.h <= node.h) {
-              let areaFit = node.w * node.h - part.w * part.h;
-              if (areaFit < minAreaFit) {
-                minAreaFit = areaFit;
+              let leftoverW = node.w - part.w;
+              let leftoverH = node.h - part.h;
+              let shortSide = Math.min(leftoverW, leftoverH);
+
+              if (shortSide < minShortSide) {
+                minShortSide = shortSide;
                 bestFit = node;
                 bestNodeIndex = n;
                 rotated = false;
@@ -526,9 +517,12 @@
 
             // 2. Эргүүлсэн
             if (part.h <= node.w && part.w <= node.h) {
-              let areaFit = node.w * node.h - part.h * part.w;
-              if (areaFit < minAreaFit) {
-                minAreaFit = areaFit;
+              let leftoverW = node.w - part.h;
+              let leftoverH = node.h - part.w;
+              let shortSide = Math.min(leftoverW, leftoverH);
+
+              if (shortSide < minShortSide) {
+                minShortSide = shortSide;
                 bestFit = node;
                 bestNodeIndex = n;
                 rotated = true;
