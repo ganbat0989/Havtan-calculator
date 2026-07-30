@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Хавтан Зүсэлт Тооцоолуур Pro v2.7</title>
+  <title>Хавтан Зүсэлт Тооцоолуур Pro v2.8</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
@@ -25,6 +25,9 @@
     input[type="number"], input[type="text"] { padding: 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 13px; outline: none; }
     .inp-size { width: 75px; }
     .inp-count { width: 55px; }
+
+    .input-wrapper { position: relative; flex: 1; display: flex; flex-direction: column; }
+    .input-wrapper label { font-size: 10px; font-weight: bold; color: #666; margin-bottom: 2px; }
 
     .edge-selectors { display: flex; gap: 4px; align-items: center; background: #eef3fc; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; color: #1a73e8; }
     .edge-selectors label { display: flex; align-items: center; cursor: pointer; }
@@ -61,7 +64,7 @@
 </head>
 <body>
 
-  <h2>✂️ Хавтан Өрөлтийн Тооцоолуур Pro <span style="font-size: 14px; color: #1a73e8; font-weight: normal;">v2.7</span></h2>
+  <h2>✂️ Хавтан Өрөлтийн Тооцоолуур Pro <span style="font-size: 14px; color: #1a73e8; font-weight: normal;">v2.8</span></h2>
 
   <!-- FREEZE / STICKY SECTION -->
   <div class="sticky-header-container">
@@ -70,17 +73,35 @@
       
       <div id="tabContent">
         <div style="display:flex; gap:6px; margin-bottom:8px;">
-          <input type="text" id="sheetName" placeholder="Хавтангийн нэр" style="flex:1;" oninput="autoSave()">
-          <button class="btn-delete" onclick="deleteCurrentTab()">🗑️ Устгах</button>
+          <div class="input-wrapper">
+            <label>Хавтангийн нэр:</label>
+            <input type="text" id="sheetName" placeholder="Нэр" oninput="autoSave()">
+          </div>
+          <button class="btn-delete" onclick="deleteCurrentTab()" style="align-self: flex-end; height: 35px;">🗑️ Устгах</button>
         </div>
         <div style="display:flex; gap:6px; margin-bottom:8px;">
-          <input type="number" id="sheetW" placeholder="Урт (X)" style="flex:1;" oninput="autoSave()">
-          <input type="number" id="sheetH" placeholder="Өргөн (Y)" style="flex:1;" oninput="autoSave()">
+          <div class="input-wrapper">
+            <label>Урт (X):</label>
+            <input type="number" id="sheetW" placeholder="Урт (X)" oninput="autoSave()">
+          </div>
+          <div class="input-wrapper">
+            <label>Өргөн (Y):</label>
+            <input type="number" id="sheetH" placeholder="Өргөн (Y)" oninput="autoSave()">
+          </div>
         </div>
         <div style="display:flex; gap:6px; margin-bottom:8px;">
-          <input type="number" id="sheetCount" placeholder="Тоо" style="flex:1;" oninput="autoSave()">
-          <input type="number" id="kerf" placeholder="Ир (мм)" style="flex:1;" oninput="autoSave()">
-          <input type="number" id="edgeVal" placeholder="Эмжээр (мм)" style="flex:1;" oninput="autoSave()">
+          <div class="input-wrapper">
+            <label>Хавтангийн тоо:</label>
+            <input type="number" id="sheetCount" placeholder="Тоо" oninput="autoSave()">
+          </div>
+          <div class="input-wrapper">
+            <label>Ир (мм):</label>
+            <input type="number" id="kerf" placeholder="Ир (мм)" oninput="autoSave()">
+          </div>
+          <div class="input-wrapper">
+            <label>Эмжээр (мм):</label>
+            <input type="number" id="edgeVal" placeholder="Эмжээр (мм)" oninput="autoSaveAndRefresh()">
+          </div>
         </div>
       </div>
 
@@ -119,7 +140,7 @@
     let activeTabId = null;
 
     function initData() {
-      const savedSheets = localStorage.getItem('cut_sheets_v2_7');
+      const savedSheets = localStorage.getItem('cut_sheets_v2_8');
 
       if (savedSheets) {
         sheetsData = JSON.parse(savedSheets);
@@ -148,7 +169,13 @@
 
     function autoSave() {
       saveCurrentTabFields();
-      localStorage.setItem('cut_sheets_v2_7', JSON.stringify(sheetsData));
+      localStorage.setItem('cut_sheets_v2_8', JSON.stringify(sheetsData));
+    }
+
+    function autoSaveAndRefresh() {
+      autoSave();
+      const current = sheetsData.find(s => s.id === activeTabId);
+      if(current) renderParts(current.parts);
     }
 
     function saveCurrentTabFields() {
@@ -249,7 +276,6 @@
       const edgeThickness = parseFloat(document.getElementById('edgeVal').value) || 0;
 
       parts.forEach((p, idx) => {
-        // ЗҮСЭХ ХЭМЖЭЭГ ТООЦООЛОХ
         let cutW = p.w - ((p.eO1 ? edgeThickness : 0) + (p.eO2 ? edgeThickness : 0));
         let cutH = p.h - ((p.eU1 ? edgeThickness : 0) + (p.eU2 ? edgeThickness : 0));
 
@@ -264,7 +290,6 @@
           <input type="number" class="pCount inp-count" placeholder="Тоо" value="${p.count}" oninput="updateItemAndSave()">
           <span>ш</span>
 
-          <!-- ЭМЖЭЭР СӨРӨӨ СӨНГОХ ХЭСЭГ -->
           <div class="edge-selectors">
             <span>Эмжээр:</span>
             <label><input type="checkbox" class="eU1" ${p.eU1 ? 'checked' : ''} onchange="updateItemAndSave()"> У1</label>
@@ -273,7 +298,6 @@
             <label><input type="checkbox" class="eO2" ${p.eO2 ? 'checked' : ''} onchange="updateItemAndSave()"> Ө2</label>
           </div>
 
-          <!-- ЗҮСЭХ ҮЕД ХЭРЭГЛЭХ ХЭМЖЭЭ -->
           <div class="cut-size-display">✂️ Зүсэх: ${cutW}x${cutH}</div>
 
           <button class="btn-remove-item" onclick="removePart(${idx})">✕</button>
@@ -403,7 +427,6 @@
       let partIdx = 1;
       (currentSheet.parts || []).forEach(p => {
         if (p.w && p.h && p.count) {
-          // ТУС ТУСЫН ЭМЖЭЭРИЙГ ХАСАЖ ЗҮСЭХ ХЭМЖЭЭГ БОДНО
           let cutW = p.w - ((p.eO1 ? edge : 0) + (p.eO2 ? edge : 0));
           let cutH = p.h - ((p.eU1 ? edge : 0) + (p.eU2 ? edge : 0));
           
