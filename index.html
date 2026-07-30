@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Хавтан Зүсэлт Тооцоолуур Pro v1.9</title>
+  <title>Хавтан Зүсэлт Тооцоолуур Pro v2.2</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
@@ -12,6 +12,9 @@
     .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 15px; }
     .card h3 { margin-top: 0; font-size: 15px; color: #444; border-bottom: 2px solid #f0f2f5; padding-bottom: 8px; }
     
+    .summary-badge { display: flex; gap: 10px; margin-bottom: 15px; }
+    .badge { flex: 1; background: #e8f0fe; color: #1a73e8; padding: 10px; border-radius: 8px; text-align: center; font-weight: bold; font-size: 13px; }
+
     .data-tools { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; }
     .btn-tool { flex: 1; min-width: 120px; padding: 10px 5px; border: none; border-radius: 8px; font-weight: bold; font-size: 12px; cursor: pointer; text-align: center; color: white; }
     .btn-copy { background: #6c5ce7; }
@@ -25,9 +28,9 @@
     
     .input-group { display: flex; gap: 6px; margin-bottom: 10px; align-items: center; flex-wrap: nowrap; }
     .part-num { font-weight: bold; width: 32px; text-align: right; color: #1a73e8; font-size: 13px; }
-    input { padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; flex: 1; min-width: 45px; outline: none; }
+    input[type="number"], input[type="text"] { padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; flex: 1; min-width: 45px; outline: none; }
     input:focus { border-color: #1a73e8; }
-    
+
     button.main-btn { width: 100%; padding: 14px; background: #1a73e8; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; font-weight: bold; }
     .btn-pdf { background: #ea4335; color: white; border: none; border-radius: 8px; width: 100%; padding: 12px; font-size: 15px; font-weight: bold; cursor: pointer; margin-bottom: 15px; display: none; }
     .btn-add { background: #34a853; color: white; border: none; border-radius: 6px; width: 100%; margin-top: 5px; padding: 10px; font-size: 14px; font-weight: bold; cursor: pointer; }
@@ -43,10 +46,8 @@
     .status-success { background: #e6f4ea; color: #137333; }
     .status-error { background: #fce8e6; color: #c5221f; border: 1px solid #ea4335; }
 
-    /* Багтаагүй деталийг гэрэлтүүлж харуулах хэсэг */
     .unplaced-box { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
-    .unplaced-badge { background: #ea4335; color: white; padding: 6px 12px; border-radius: 6px; font-weight: bold; font-size: 13px; box-shadow: 0 0 10px rgba(234, 67, 53, 0.8); animation: pulse 1.2s infinite alternate; }
-    @keyframes pulse { 0% { transform: scale(1); opacity: 0.85; } 100% { transform: scale(1.05); opacity: 1; } }
+    .unplaced-badge { background: #ea4335; color: white; padding: 6px 12px; border-radius: 6px; font-weight: bold; font-size: 13px; }
 
     @media print {
       body * { visibility: hidden; }
@@ -58,7 +59,7 @@
 </head>
 <body>
 
-  <h2>✂️ Хавтан Өрөлтийн Тооцоолуур Pro <span style="font-size: 14px; color: #1a73e8; font-weight: normal;">v1.9</span></h2>
+  <h2>✂️ Хавтан Өрөлтийн Тооцоолуур Pro <span style="font-size: 14px; color: #1a73e8; font-weight: normal;">v2.2</span></h2>
 
   <div class="data-tools">
     <button class="btn-tool btn-copy" onclick="copyDataText()">📋 Текст хуулах</button>
@@ -92,12 +93,18 @@
         <label style="min-width:70px; font-size:12px; font-weight:bold;">Эмжээр:</label>
         <input type="number" id="edgeVal" placeholder="4 талын мм" value="0" oninput="autoSave()">
       </div>
-      <button class="btn-delete" style="width:100%; margin-top:5px;" onclick="deleteCurrentTab()">🗑️ Энэ хавтанг устгах</button>
+      <button class="btn-delete" style="width:100%; margin-top:10px;" onclick="deleteCurrentTab()">🗑️ Энэ хавтанг устгах</button>
     </div>
   </div>
 
   <div class="card">
     <h3 id="parts-header-title">2. Зүсэх деталь хэсгүүд</h3>
+    
+    <div class="summary-badge">
+      <div class="badge" id="typeCountBadge">Нэр төрөл: 0</div>
+      <div class="badge" id="totalQtyBadge">Нийт ширхэг: 0 ш</div>
+    </div>
+
     <div id="parts-list"></div>
     <button class="btn-add" onclick="addPartInput()">+ Энэ хавтанд деталь нэмэх</button>
   </div>
@@ -118,7 +125,7 @@
     let activeTabId = null;
 
     function initData() {
-      const savedSheets = localStorage.getItem('cut_sheets_v1_9');
+      const savedSheets = localStorage.getItem('cut_sheets_v2_2');
 
       if (savedSheets) {
         sheetsData = JSON.parse(savedSheets);
@@ -126,10 +133,10 @@
         sheetsData = [
           { 
             id: 1, 
-            name: "U325 ягаан", 
+            name: "u325 (4 Хавтан)", 
             w: 2800, 
             h: 2070, 
-            count: 3, 
+            count: 4, 
             kerf: 4,
             edge: 0,
             parts: [
@@ -153,7 +160,15 @@
               { w: 318, h: 218, count: 1 },
               { w: 612, h: 197, count: 1 },
               { w: 578, h: 197, count: 3 },
-              { w: 300, h: 182, count: 1 }
+              { w: 300, h: 182, count: 1 },
+              { w: 1770, h: 782, count: 1 },
+              { w: 840, h: 666, count: 1 },
+              { w: 802, h: 600, count: 1 },
+              { w: 840, h: 600, count: 1 },
+              { w: 1117, h: 578, count: 1 },
+              { w: 1765, h: 329, count: 2 },
+              { w: 700, h: 304, count: 1 },
+              { w: 804, h: 318, count: 1 }
             ]
           }
         ];
@@ -165,7 +180,7 @@
 
     function autoSave() {
       saveCurrentTabFields();
-      localStorage.setItem('cut_sheets_v1_9', JSON.stringify(sheetsData));
+      localStorage.setItem('cut_sheets_v2_2', JSON.stringify(sheetsData));
     }
 
     function saveCurrentTabFields() {
@@ -190,7 +205,16 @@
             count: parseInt(pCounts[i].value) || 1
           });
         }
+        updateBadges(current.parts);
       }
+    }
+
+    function updateBadges(parts) {
+      let typeCount = parts.length;
+      let totalQty = parts.reduce((sum, p) => sum + (p.count || 0), 0);
+      
+      document.getElementById('typeCountBadge').innerText = `Нэр төрөл: ${typeCount}`;
+      document.getElementById('totalQtyBadge').innerText = `Нийт ширхэг: ${totalQty} ш`;
     }
 
     function renderTabs() {
@@ -263,6 +287,8 @@
         `;
         container.appendChild(div);
       });
+
+      updateBadges(parts);
     }
 
     function addNewTab() {
@@ -273,7 +299,7 @@
         name: `Хавтан ${sheetsData.length + 1}`,
         w: 2800,
         h: 2070,
-        count: 3,
+        count: 4,
         kerf: 4,
         edge: 0,
         parts: [{ w: 500, h: 300, count: 1 }]
@@ -319,8 +345,7 @@
 
     function copyDataText() {
       autoSave();
-      const str = JSON.stringify(sheetsData);
-      prompt("Доорх текстийг хуулж авна уу:", str);
+      prompt("Доорх текстийг хуулж авна уу:", JSON.stringify(sheetsData));
     }
 
     function pasteDataText() {
@@ -331,10 +356,10 @@
           if (Array.isArray(imported)) {
             sheetsData = imported;
             activeTabId = sheetsData[0].id;
-            localStorage.setItem('cut_sheets_v1_9', JSON.stringify(sheetsData));
+            localStorage.setItem('cut_sheets_v2_2', JSON.stringify(sheetsData));
             renderTabs();
             clearResults();
-            alert("✅ Хэмжээнүүд амжилттай солигдлоо!");
+            alert("✅ Амжилттай хуулагдлаа!");
           }
         } catch (err) {
           alert("❌ Буруу текст байна!");
@@ -351,8 +376,7 @@
         try {
           const data = new Uint8Array(evt.target.result);
           const workbook = XLSX.read(data, { type: 'array' });
-          const firstSheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[firstSheetName];
+          const worksheet = workbook.Sheets[workbook.SheetNames[0]];
           const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
           let importedParts = [];
@@ -374,20 +398,17 @@
               renderParts(current.parts);
               autoSave();
               clearResults();
-              alert(`✅ Excel-ээс ${importedParts.length} төрлийн деталь орлоо!`);
+              alert(`✅ Excel-ээс ${importedParts.length} деталь орууллаа!`);
             }
-          } else {
-            alert("⚠️ Excel файл дотроос тоон хэмжээтэй деталь олдсонгүй!");
           }
         } catch (err) {
-          alert("❌ Excel файл уншихад алдаа гарлаа!");
+          alert("❌ Алдаа гарлаа!");
         }
         document.getElementById('excelFileInput').value = "";
       };
       reader.readAsArrayBuffer(file);
     }
 
-    // MULTI-STRATEGY ADVANCED PACKING ALGORITHM
     function calculateNesting() {
       autoSave();
 
@@ -401,6 +422,7 @@
       let sheetH = Math.min(currentSheet.w, currentSheet.h);
       let edge = currentSheet.edge || 0;
       let kerf = currentSheet.kerf || 0;
+      let maxSheets = currentSheet.count;
 
       let basePartsList = [];
       let partIdx = 1;
@@ -421,17 +443,15 @@
         }
       });
 
-      // Олон төрлийн эрэмбэлэх болон split хийх алгоритмуудаар туршиж 100% багтах сонголтыг олно
       let bestResult = null;
+      let minSheetsUsed = Infinity;
       let minUnplacedCount = Infinity;
 
       let sortRules = [
         (a, b) => (Math.max(b.w, b.h) - Math.max(a.w, a.h)) || (b.w * b.h - a.w * a.h),
         (a, b) => (b.w * b.h - a.w * a.h),
         (a, b) => (b.w - a.w) || (b.h - a.h),
-        (a, b) => (b.h - a.h) || (b.w - a.w),
-        (a, b) => (Math.min(b.w, b.h) - Math.min(a.w, a.h)),
-        (a, b) => (a.w * a.h - b.w * b.h) // жижгээс нь том руу (зарим тохиолдолд сул зайг оновчтой бөглөнө)
+        (a, b) => (b.h - a.h) || (b.w - a.w)
       ];
 
       let splitRules = ['short', 'long', 'horiz', 'vert'];
@@ -439,9 +459,11 @@
       sortRules.forEach(sortFn => {
         splitRules.forEach(splitMode => {
           let testList = [...basePartsList].sort(sortFn);
-          let res = runGuillotineEngine(testList, sheetW, sheetH, kerf, currentSheet.count, splitMode);
-          if (res.remaining.length < minUnplacedCount) {
+          let res = runGuillotineEngine(testList, sheetW, sheetH, kerf, maxSheets, splitMode);
+          
+          if (res.remaining.length < minUnplacedCount || (res.remaining.length === minUnplacedCount && res.sheets.length < minSheetsUsed)) {
             minUnplacedCount = res.remaining.length;
+            minSheetsUsed = res.sheets.length;
             bestResult = res;
           }
         });
@@ -456,19 +478,15 @@
       
       if(bestResult.remaining.length > 0) {
         statusDiv.className = "status-msg status-error";
-        
-        let badgesHtml = bestResult.remaining.map(p => 
-          `<span class="unplaced-badge">⚠️ ${p.label}</span>`
-        ).join(" ");
-
+        let badgesHtml = bestResult.remaining.map(p => `<span class="unplaced-badge">⚠️ ${p.label}</span>`).join(" ");
         statusDiv.innerHTML = `
-          <div>⚠️ <b>АНХААР:</b> Нийт <b>${bestResult.remaining.length}</b> деталь 3 хавтанд багталгүй үлдлээ!</div>
+          <div>⚠️ <b>АНХААР:</b> Тохируулсан ${maxSheets} хавтанд нийт <b>${bestResult.remaining.length}</b> деталь багталгүй үлдлээ!</div>
           <div style="margin-top:8px;"><b>Багтаагүй деталууд:</b></div>
           <div class="unplaced-box">${badgesHtml}</div>
         `;
       } else {
         statusDiv.className = "status-msg status-success";
-        statusDiv.innerText = `🎉 АМЖИЛТТАЙ! Бүх деталь ЯГ ${bestResult.sheets.length} ХАВТАНД 100% БАГТЛАА!`;
+        statusDiv.innerText = `🎉 АМЖИЛТТАЙ! Бүх ${basePartsList.length} деталь ЯГ ${bestResult.sheets.length} ХАВТАНД 100% БАГТЛАА!`;
       }
 
       document.getElementById('pdfBtn').style.display = "block";
@@ -493,7 +511,6 @@
           for (let n = 0; n < freeNodes.length; n++) {
             let node = freeNodes[n];
 
-            // 1. Эргүүлээгүй байдлаар шалгах
             if (part.w <= node.w && part.h <= node.h) {
               let areaFit = node.w * node.h - part.w * part.h;
               if (areaFit < minAreaFit) {
@@ -504,7 +521,6 @@
               }
             }
 
-            // 2. 90 градус эргүүлж шалгах
             if (part.h <= node.w && part.w <= node.h) {
               let areaFit = node.w * node.h - part.h * part.w;
               if (areaFit < minAreaFit) {
@@ -532,7 +548,6 @@
             let wRemain = node.w - pw - kerf;
             let hRemain = node.h - ph - kerf;
 
-            // Зүсэлтийн шугамын хуваалт (Split Mode)
             let splitHoriz = false;
             if (splitMode === 'short') {
               splitHoriz = (node.w - pw) < (node.h - ph);
@@ -553,7 +568,7 @@
             }
 
             remaining.splice(i, 1);
-            i = 0; // Дараагийн тохирох деталийг дахин эхнээс нь хайна
+            i = 0;
           } else {
             i++;
           }
