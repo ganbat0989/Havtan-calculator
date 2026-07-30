@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Хавтан Зүсэлт Тооцоолуур Pro</title>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    body { padding: 15px; background: #f4f6f9; margin: 0; color: #333; }
+    h2 { color: #1a73e8; text-align: center; margin-top: 5px; margin-bottom: 15px; font-size: 20px; }
+    .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 15px; }
+    .card h3 { margin-top: 0; font-size: 15px; color: #444; border-bottom: 2px solid #f0f2f5; padding-bottom: 8px; }
+    
+    .data-tools { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; }
+    .btn-tool { flex: 1; min-width: 120px; padding: 10px 5px; border: none; border-radius: 8px; font-weight: bold; font-size: 12px; cursor: pointer; text-align: center; color: white; }
+    .btn-copy { background: #6c5ce7; }
+    .btn-paste { background: #00cec9; }
+    .btn-excel { background: #107c41; }
+
+    .tabs-header { display: flex; gap: 5px; overflow-x: auto; margin-bottom: 15px; border-bottom: 2px solid #ddd; padding-bottom: 5px; }
+    .tab-btn { padding: 8px 14px; background: #e4e6eb; border: none; border-radius: 8px 8px 0 0; cursor: pointer; font-weight: bold; font-size: 13px; white-space: nowrap; }
+    .tab-btn.active { background: #1a73e8; color: white; }
+    .tab-add-btn { background: #34a853; color: white; border: none; border-radius: 8px; padding: 8px 12px; cursor: pointer; font-weight: bold; font-size: 13px; }
+    
+    .input-group { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; flex-wrap: wrap; }
+    .input-group label { font-weight: 600; font-size: 12px; min-width: 65px; color: #555; }
+    input { padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; flex: 1; min-width: 60px; outline: none; }
+    input:focus { border-color: #1a73e8; }
+    
+    button.main-btn { width: 100%; padding: 14px; background: #1a73e8; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; font-weight: bold; }
+    .btn-pdf { background: #ea4335; color: white; border: none; border-radius: 8px; width: 100%; padding: 12px; font-size: 15px; font-weight: bold; cursor: pointer; margin-bottom: 15px; display: none; }
+    .btn-add { background: #34a853; color: white; border: none; border-radius: 6px; width: 100%; margin-top: 5px; padding: 10px; font-size: 14px; font-weight: bold; cursor: pointer; }
+    .btn-delete { background: #d93025; color: white; border: none; border-radius: 6px; padding: 8px 12px; cursor: pointer; font-weight: bold; }
+    .btn-remove-item { background: #ff4d4d; color: white; border: none; border-radius: 6px; padding: 10px; font-weight: bold; cursor: pointer; }
+    
+    .canvas-container { text-align: center; background: white; padding: 15px; border-radius: 12px; overflow-x: auto; }
+    .sheet-wrapper { margin-bottom: 25px; border-bottom: 1px dashed #ccc; padding-bottom: 15px; }
+    .sheet-title { font-weight: bold; font-size: 14px; color: #1a73e8; margin-bottom: 8px; text-align: left; }
+    canvas, img.sheet-img { border: 2px solid #333; background: #e8eaed; border-radius: 4px; max-width: 100%; }
+    
+    .status-msg { font-weight: bold; margin-bottom: 15px; padding: 10px; border-radius: 6px; font-size: 13px; }
+    .status-success { background: #e6f4ea; color: #137333; }
+    .status-error { background: #fce8e6; color: #c5221f; }
+
+    @media print {
+      body * { visibility: hidden; }
+      #pdfExportArea, #pdfExportArea * { visibility: visible; }
+      #pdfExportArea { position: absolute; left: 0; top: 0; width: 100%; }
+      .btn-pdf { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <h2>✂️ Хавтан Өрөлтийн Тооцоолуур Pro</h2>
+
+  <div class="data-tools">
+    <button class="btn-tool btn-copy" onclick="copyDataText()">📋 Текст хуулах</button>
+    <button class="btn-tool btn-paste" onclick="pasteDataText()">📥 Текст буулгах</button>
+    <button class="btn-tool btn-excel" onclick="document.getElementById('excelFileInput').click()">📊 Excel оруулж ирэх</button>
+    <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" style="display:none;" onchange="importExcelFile(event)">
+  </div>
+
+  <div class="card">
+    <div class="tabs-header" id="tabsHeader"></div>
+    
+    <h3>1. Үндсэн хавтангийн хэмжээ</h3>
+    <div id="tabContent">
+      <div class="input-group">
+        <label>Хавтан нэр:</label>
+        <input type="text" id="sheetName" oninput="autoSave()">
+      </div>
+      <div class="input-group">
+        <label>Урт (X мм):</label>
+        <input type="number" id="sheetW" oninput="autoSave()">
+        <label>Өргөн (Y мм):</label>
+        <input type="number" id="sheetH" oninput="autoSave()">
+      </div>
+      <div class="input-group">
+        <label>Бэлэн тоо:</label>
+        <input type="number" id="sheetCount" min="1" oninput="autoSave()">
+        <label>Ирний зайт:</label>
+        <input type="number" id="kerf" oninput="autoSave()">
+      </div>
+      <button class="btn-delete" style="width:100%; margin-top:5px;" onclick="deleteCurrentTab()">🗑️ Энэ хавтанг устгах</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 id="parts-header-title">2. Зүсэх деталь хэсгүүд (мм)</h3>
+    <div id="parts-list"></div>
+    <button class="btn-add" onclick="addPartInput()">+ Энэ хавтанд деталь нэмэх</button>
+  </div>
+
+  <button class="main-btn" onclick="calculateNesting()">🧮 Шулуун Зүсэлтээр Тооцоолох</button>
+
+  <div class="card canvas-container" style="margin-top: 20px;">
+    <h3 id="result-header-title">3. Зүсэлтийн зураглал</h3>
+    <button id="pdfBtn" class="btn-pdf" onclick="printPDF()">📄 PDF-ээр хадгалах / Хэвлэх</button>
+    <div id="pdfExportArea">
+      <div id="status" class="status-msg" style="display:none;"></div>
+      <div id="sheetsContainer"></div>
+    </div>
+  </div>
+
+  <script>
+    let sheetsData = [];
+    let activeTabId = null;
+
+    function initData() {
+      const savedSheets = localStorage.getItem('cut_sheets_v12');
+
+      if (savedSheets) {
+        sheetsData = JSON.parse(savedSheets);
+      } else {
+        sheetsData = [
+          { 
+            id: 1, 
+            name: "U325 ягаан", 
+            w: 2800, 
+            h: 2070, 
+            count: 4, 
+            kerf: 5,
+            parts: [
+              { w: 2775, h: 582, count: 1 },
+              { w: 2775, h: 578, count: 2 },
+              { w: 2775, h: 200, count: 1 },
+              { w: 840, h: 100, count: 1 },
+              { w: 1896, h: 100, count: 1 },
+              { w: 2775, h: 875, count: 1 },
+              { w: 930, h: 582, count: 1 },
+              { w: 1117, h: 578, count: 1 },
+              { w: 364, h: 578, count: 2 },
+              { w: 2775, h: 578, count: 1 }
+            ]
+          }
+        ];
+      }
+
+      activeTabId = sheetsData[0].id;
+      renderTabs();
+    }
+
+    function autoSave() {
+      saveCurrentTabFields();
+      localStorage.setItem('cut_sheets_v12', JSON.stringify(sheetsData));
+    }
+
+    function saveCurrentTabFields() {
+      const current = sheetsData.find(s => s.id === activeTabId);
+      if (current) {
+        current.name = document.getElementById('sheetName').value;
+        current.w = parseFloat(document.getElementById('sheetW').value) || 0;
+        current.h = parseFloat(document.getElementById('sheetH').value) || 0;
+        current.count = parseInt(document.getElementById('sheetCount').value) || 1;
+        current.kerf = parseFloat(document.getElementById('kerf').value) || 0;
+
+        const pWs = document.querySelectorAll('.pW');
+        const pHs = document.querySelectorAll('.pH');
+        const pCounts = document.querySelectorAll('.pCount');
+
+        current.parts = [];
+        for (let i = 0; i < pWs.length; i++) {
+          current.parts.push({
+            w: parseFloat(pWs[i].value) || 0,
+            h: parseFloat(pHs[i].value) || 0,
+            count: parseInt(pCounts[i].value) || 1
+          });
+        }
+      }
+    }
+
+    function renderTabs() {
+      const header = document.getElementById('tabsHeader');
+      header.innerHTML = "";
+
+      sheetsData.forEach(s => {
+        const btn = document.createElement('button');
+        btn.className = `tab-btn ${s.id === activeTabId ? 'active' : ''}`;
+        btn.innerText = s.name;
+        btn.onclick = () => switchTab(s.id);
+        header.appendChild(btn);
+      });
+
+      const addBtn = document.createElement('button');
+      addBtn.className = 'tab-add-btn';
+      addBtn.innerText = "+ Шинэ хавтан";
+      addBtn.onclick = addNewTab;
+      header.appendChild(addBtn);
+
+      loadTabContent();
+    }
+
+    function switchTab(id) {
+      autoSave();
+      activeTabId = id;
+      renderTabs();
+      clearResults();
+    }
+
+    function clearResults() {
+      document.getElementById('sheetsContainer').innerHTML = "";
+      document.getElementById('status').style.display = "none";
+      document.getElementById('pdfBtn').style.display = "none";
+    }
+
+    function loadTabContent() {
+      const current = sheetsData.find(s => s.id === activeTabId);
+      if (current) {
+        document.getElementById('sheetName').value = current.name;
+        document.getElementById('sheetW').value = current.w;
+        document.getElementById('sheetH').value = current.h;
+        document.getElementById('sheetCount').value = current.count;
+        document.getElementById('kerf').value = current.kerf;
+
+        document.getElementById('parts-header-title').innerText = `2. "${current.name}" хавтангийн зүсэх деталууд`;
+        document.getElementById('result-header-title').innerText = `3. "${current.name}" шулуун зүсэлтийн зураглал`;
+
+        renderParts(current.parts || []);
+      }
+    }
+
+    function renderParts(parts) {
+      const container = document.getElementById('parts-list');
+      container.innerHTML = "";
+
+      parts.forEach((p, idx) => {
+        const div = document.createElement('div');
+        div.className = 'input-group part-item';
+        div.innerHTML = `
+          <input type="number" class="pW" placeholder="Урт" value="${p.w}" oninput="autoSave()">
+          <span>х</span>
+          <input type="number" class="pH" placeholder="Өргөн" value="${p.h}" oninput="autoSave()">
+          <span>-></span>
+          <input type="number" class="pCount" placeholder="Тоо" value="${p.count}" oninput="autoSave()">
+          <span>ширхэг</span>
+          <button class="btn-remove-item" onclick="removePart(${idx})">✕</button>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function addNewTab() {
+      autoSave();
+      const newId = Date.now();
+      sheetsData.push({
+        id: newId,
+        name: `Хавтан ${sheetsData.length + 1}`,
+        w: 2800,
+        h: 2070,
+        count: 1,
+        kerf: 5,
+        parts: [{ w: 500, h: 300, count: 1 }]
+      });
+      activeTabId = newId;
+      renderTabs();
+      autoSave();
+      clearResults();
+    }
+
+    function deleteCurrentTab() {
+      if (sheetsData.length <= 1) {
+        alert("Хамгийн багадаа 1 хавтан байх ёстой!");
+        return;
+      }
+      sheetsData = sheetsData.filter(s => s.id !== activeTabId);
+      activeTabId = sheetsData[0].id;
+      renderTabs();
+      autoSave();
+      clearResults();
+    }
+
+    function addPartInput() {
+      autoSave();
+      const current = sheetsData.find(s => s.id === activeTabId);
+      if (current) {
+        if (!current.parts) current.parts = [];
+        current.parts.push({ w: 500, h: 300, count: 1 });
+        renderParts(current.parts);
+        autoSave();
+      }
+    }
+
+    function removePart(index) {
+      autoSave();
+      const current = sheetsData.find(s => s.id === activeTabId);
+      if (current && current.parts) {
+        current.parts.splice(index, 1);
+        renderParts(current.parts);
+        autoSave();
+      }
+    }
+
+    function copyDataText() {
+      autoSave();
+      const str = JSON.stringify(sheetsData);
+      prompt("Доорх текстийг хуулж авна уу:", str);
+    }
+
+    function pasteDataText() {
+      const inputStr = prompt("Хуулсан текстээ энд буулгана уу:");
+      if (inputStr) {
+        try {
+          const imported = JSON.parse(inputStr);
+          if (Array.isArray(imported)) {
+            sheetsData = imported;
+            activeTabId = sheetsData[0].id;
+            localStorage.setItem('cut_sheets_v12', JSON.stringify(sheetsData));
+            renderTabs();
+            clearResults();
+            alert("✅ Хэмжээнүүд амжилттай солигдлоо!");
+          }
+        } catch (err) {
+          alert("❌ Буруу текст байна!");
+        }
+      }
+    }
+
+    function importExcelFile(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        try {
+          const data = new Uint8Array(evt.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const firstSheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[firstSheetName];
+          const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+          let importedParts = [];
+          rows.forEach(row => {
+            if (row && row.length >= 2) {
+              let w = parseFloat(row[0]);
+              let h = parseFloat(row[1]);
+              let count = parseInt(row[2]) || 1;
+              if (!isNaN(w) && !isNaN(h) && w > 0 && h > 0) {
+                importedParts.push({ w: w, h: h, count: count });
+              }
+            }
+          });
+
+          if (importedParts.length > 0) {
+            const current = sheetsData.find(s => s.id === activeTabId);
+            if (current) {
+              current.parts = importedParts;
+              renderParts(current.parts);
+              autoSave();
+              clearResults();
+              alert(`✅ Идэвхитэй хавтанд Excel-ээс ${importedParts.length} төрлийн деталь амжилттай орлоо!`);
+            }
+          } else {
+            alert("⚠️ Excel файл дотроос тоон хэмжээтэй деталь олдсонгүй!");
+          }
+        } catch (err) {
+          alert("❌ Excel файл уншихад алдаа гарлаа!");
+        }
+        document.getElementById('excelFileInput').value = "";
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    // ADVANCED MULTI-PASS GUILLOTINE PACKER
+    function calculateNesting() {
+      autoSave();
+
+      const container = document.getElementById('sheetsContainer');
+      container.innerHTML = "";
+
+      const currentSheet = sheetsData.find(s => s.id === activeTabId);
+      if (!currentSheet) return;
+
+      let partsList = [];
+      (currentSheet.parts || []).forEach(p => {
+        if (p.w && p.h && p.count) {
+          for (let c = 0; c < p.count; c++) {
+            partsList.push({ w: p.w, h: p.h, id: `${p.w}x${p.h}` });
+          }
+        }
+      });
+
+      // 3 өөр эрэмбэлэх сортын туршилт хийж, хамгийн цөөхөн хавтанд багтаасныг нь сонгоно
+      const sortStrategies = [
+        (a, b) => (b.w * b.h) - (a.w * a.h), // Талбайгаар
+        (a, b) => Math.max(b.w, b.h) - Math.max(a.w, a.h), // Их уртаар
+        (a, b) => (b.w + b.h) - (a.w + a.h) // Периметрээр
+      ];
+
+      let bestSheetsResult = null;
+      let minSheetsUsed = Infinity;
+
+      sortStrategies.forEach(strategy => {
+        let testParts = [...partsList].sort(strategy);
+        let result = packEngine(testParts, currentSheet);
+
+        if (result.sheets.length < minSheetsUsed && result.remaining.length === 0) {
+          minSheetsUsed = result.sheets.length;
+          bestSheetsResult = result;
+        } else if (!bestSheetsResult && result.remaining.length < (bestSheetsResult ? bestSheetsResult.remaining.length : Infinity)) {
+          bestSheetsResult = result;
+        }
+      });
+
+      if (!bestSheetsResult) {
+        bestSheetsResult = packEngine(partsList, currentSheet);
+      }
+
+      bestSheetsResult.sheets.forEach((placedParts, idx) => {
+        renderSingleSheetCanvas(currentSheet.name, currentSheet.w, currentSheet.h, placedParts, idx + 1);
+      });
+
+      const statusDiv = document.getElementById('status');
+      statusDiv.style.display = "block";
+      if(bestSheetsResult.remaining.length > 0) {
+        statusDiv.className = "status-msg status-error";
+        statusDiv.innerText = `⚠️ Анхаар: "${currentSheet.name}" хавтанд ${bestSheetsResult.remaining.length} деталь багтсангүй! Хавтангийн тоог нэмнэ үү.`;
+      } else {
+        statusDiv.className = "status-msg status-success";
+        statusDiv.innerText = `✅ ОНОВЧТОЙ ЗҮСЭЛТ: Бүх деталь яг ${bestSheetsResult.sheets.length} хавтанд 100% багтлаа!`;
+      }
+
+      document.getElementById('pdfBtn').style.display = "block";
+    }
+
+    function packEngine(inputParts, currentSheet) {
+      let remainingParts = [...inputParts];
+      let sheets = [];
+
+      for (let s = 0; s < currentSheet.count; s++) {
+        if (remainingParts.length === 0) break;
+
+        let freeRects = [{ x: 0, y: 0, w: currentSheet.w, h: currentSheet.h }];
+        let placedParts = [];
+
+        let i = 0;
+        while (i < remainingParts.length) {
+          let part = remainingParts[i];
+          let bestRectIdx = -1;
+          let bestRotate = false;
+          let minShortSide = Infinity;
+
+          for (let rIdx = 0; rIdx < freeRects.length; rIdx++) {
+            let rect = freeRects[rIdx];
+
+            // 1. Normal
+            if (part.w <= rect.w && part.h <= rect.h) {
+              let leftover = Math.min(rect.w - part.w, rect.h - part.h);
+              if (leftover < minShortSide) {
+                minShortSide = leftover;
+                bestRectIdx = rIdx;
+                bestRotate = false;
+              }
+            }
+
+            // 2. Rotated
+            if (part.h <= rect.w && part.w <= rect.h) {
+              let leftover = Math.min(rect.w - part.h, rect.h - part.w);
+              if (leftover < minShortSide) {
+                minShortSide = leftover;
+                bestRectIdx = rIdx;
+                bestRotate = true;
+              }
+            }
+          }
+
+          if (bestRectIdx !== -1) {
+            let rect = freeRects.splice(bestRectIdx, 1)[0];
+            let pw = bestRotate ? part.h : part.w;
+            let ph = bestRotate ? part.w : part.h;
+
+            placedParts.push({ x: rect.x, y: rect.y, w: pw, h: ph, label: part.id });
+            remainingParts.splice(i, 1);
+
+            let remW = rect.w - pw - currentSheet.kerf;
+            let remH = rect.h - ph - currentSheet.kerf;
+
+            if (remW > 0 && remH > 0) {
+              if (pw > ph) {
+                freeRects.push({ x: rect.x + pw + currentSheet.kerf, y: rect.y, w: remW, h: ph });
+                freeRects.push({ x: rect.x, y: rect.y + ph + currentSheet.kerf, w: rect.w, h: remH });
+              } else {
+                freeRects.push({ x: rect.x + pw + currentSheet.kerf, y: rect.y, w: remW, h: rect.h });
+                freeRects.push({ x: rect.x, y: rect.y + ph + currentSheet.kerf, w: pw, h: remH });
+              }
+            } else if (remW > 0) {
+              freeRects.push({ x: rect.x + pw + currentSheet.kerf, y: rect.y, w: remW, h: rect.h });
+            } else if (remH > 0) {
+              freeRects.push({ x: rect.x, y: rect.y + ph + currentSheet.kerf, w: rect.w, h: remH });
+            }
+
+            freeRects.sort((a, b) => (a.w * a.h) - (b.w * b.h));
+            i = 0; // Эхнээс нь дахин шалгаж сул зайд хамгийн тохиромжтойг хайна
+          } else {
+            i++;
+          }
+        }
+
+        if (placedParts.length > 0) {
+          sheets.push(placedParts);
+        }
+      }
+
+      return { sheets: sheets, remaining: remainingParts };
+    }
+
+    function renderSingleSheetCanvas(sheetName, sheetW, sheetH, placedParts, sheetIndex) {
+      const container = document.getElementById('sheetsContainer');
+      const wrapper = document.createElement('div');
+      wrapper.className = 'sheet-wrapper';
+
+      const title = document.createElement('div');
+      title.className = 'sheet-title';
+      title.innerText = `📄 ${sheetIndex}-р хавтан: "${sheetName}" (${sheetW}x${sheetH}мм)`;
+      wrapper.appendChild(title);
+
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      const targetWidth = 1200;
+      const scale = targetWidth / sheetW;
+      
+      canvas.width = targetWidth;
+      canvas.height = sheetH * scale;
+
+      ctx.fillStyle = "#dcdde1";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      placedParts.forEach(p => {
+        let x = p.x * scale;
+        let y = p.y * scale;
+        let w = p.w * scale;
+        let h = p.h * scale;
+
+        ctx.fillStyle = "#1a73e8";
+        ctx.fillRect(x, y, w, h);
+        
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 3;
+        ctx.strokeRect(x, y, w, h);
+
+        if (w > 20 && h > 15) {
+          ctx.fillStyle = "#ffffff";
+          ctx.font = `bold ${Math.max(12, Math.floor(14 * scale))}px sans-serif`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(p.label, x + w / 2, y + h / 2);
+        }
+      });
+
+      const img = document.createElement('img');
+      img.className = 'sheet-img';
+      img.src = canvas.toDataURL('image/png');
+      
+      wrapper.appendChild(img);
+      container.appendChild(wrapper);
+    }
+
+    function printPDF() {
+      window.print();
+    }
+
+    initData();
+  </script>
+</body>
+</html>
+
