@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Хавтан Зүсэлт Тооцоолуур Pro v2.2</title>
+  <title>Хавтан Зүсэлт Тооцоолуур Pro v2.3</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
@@ -59,7 +59,7 @@
 </head>
 <body>
 
-  <h2>✂️ Хавтан Өрөлтийн Тооцоолуур Pro <span style="font-size: 14px; color: #1a73e8; font-weight: normal;">v2.2</span></h2>
+  <h2>✂️ Хавтан Өрөлтийн Тооцоолуур Pro <span style="font-size: 14px; color: #1a73e8; font-weight: normal;">v2.3</span></h2>
 
   <div class="data-tools">
     <button class="btn-tool btn-copy" onclick="copyDataText()">📋 Текст хуулах</button>
@@ -125,7 +125,7 @@
     let activeTabId = null;
 
     function initData() {
-      const savedSheets = localStorage.getItem('cut_sheets_v2_2');
+      const savedSheets = localStorage.getItem('cut_sheets_v2_3');
 
       if (savedSheets) {
         sheetsData = JSON.parse(savedSheets);
@@ -180,7 +180,7 @@
 
     function autoSave() {
       saveCurrentTabFields();
-      localStorage.setItem('cut_sheets_v2_2', JSON.stringify(sheetsData));
+      localStorage.setItem('cut_sheets_v2_3', JSON.stringify(sheetsData));
     }
 
     function saveCurrentTabFields() {
@@ -356,7 +356,7 @@
           if (Array.isArray(imported)) {
             sheetsData = imported;
             activeTabId = sheetsData[0].id;
-            localStorage.setItem('cut_sheets_v2_2', JSON.stringify(sheetsData));
+            localStorage.setItem('cut_sheets_v2_3', JSON.stringify(sheetsData));
             renderTabs();
             clearResults();
             alert("✅ Амжилттай хуулагдлаа!");
@@ -444,30 +444,32 @@
       });
 
       let bestResult = null;
-      let minSheetsUsed = Infinity;
       let minUnplacedCount = Infinity;
 
+      // Олон төрлийн эрэмбэлэх болон зүсэх тактикууд
       let sortRules = [
         (a, b) => (Math.max(b.w, b.h) - Math.max(a.w, a.h)) || (b.w * b.h - a.w * a.h),
         (a, b) => (b.w * b.h - a.w * a.h),
+        (a, b) => (Math.min(b.w, b.h) - Math.min(a.w, a.h)),
         (a, b) => (b.w - a.w) || (b.h - a.h),
         (a, b) => (b.h - a.h) || (b.w - a.w)
       ];
 
       let splitRules = ['short', 'long', 'horiz', 'vert'];
 
-      sortRules.forEach(sortFn => {
-        splitRules.forEach(splitMode => {
+      for (let sortFn of sortRules) {
+        for (let splitMode of splitRules) {
           let testList = [...basePartsList].sort(sortFn);
           let res = runGuillotineEngine(testList, sheetW, sheetH, kerf, maxSheets, splitMode);
           
-          if (res.remaining.length < minUnplacedCount || (res.remaining.length === minUnplacedCount && res.sheets.length < minSheetsUsed)) {
+          if (res.remaining.length < minUnplacedCount) {
             minUnplacedCount = res.remaining.length;
-            minSheetsUsed = res.sheets.length;
             bestResult = res;
+            if (minUnplacedCount === 0) break; // Багтсан бол шууд зогсоно
           }
-        });
-      });
+        }
+        if (minUnplacedCount === 0) break;
+      }
 
       bestResult.sheets.forEach((placedParts, idx) => {
         renderSingleSheetCanvas(currentSheet.name, sheetW, sheetH, placedParts, idx + 1);
@@ -506,25 +508,33 @@
           let bestFit = null;
           let bestNodeIndex = -1;
           let rotated = false;
-          let minAreaFit = Infinity;
+          let minShortSide = Infinity;
 
           for (let n = 0; n < freeNodes.length; n++) {
             let node = freeNodes[n];
 
+            // 1. Эргүүлээгүй байрлал
             if (part.w <= node.w && part.h <= node.h) {
-              let areaFit = node.w * node.h - part.w * part.h;
-              if (areaFit < minAreaFit) {
-                minAreaFit = areaFit;
+              let leftoverW = node.w - part.w;
+              let leftoverH = node.h - part.h;
+              let shortSide = Math.min(leftoverW, leftoverH);
+
+              if (shortSide < minShortSide) {
+                minShortSide = shortSide;
                 bestFit = node;
                 bestNodeIndex = n;
                 rotated = false;
               }
             }
 
+            // 2. Эргүүлсэн байрлал
             if (part.h <= node.w && part.w <= node.h) {
-              let areaFit = node.w * node.h - part.h * part.w;
-              if (areaFit < minAreaFit) {
-                minAreaFit = areaFit;
+              let leftoverW = node.w - part.h;
+              let leftoverH = node.h - part.w;
+              let shortSide = Math.min(leftoverW, leftoverH);
+
+              if (shortSide < minShortSide) {
+                minShortSide = shortSide;
                 bestFit = node;
                 bestNodeIndex = n;
                 rotated = true;
@@ -568,7 +578,7 @@
             }
 
             remaining.splice(i, 1);
-            i = 0;
+            i = 0; // Шинэ зай үүссэн тул эхнээс нь дахин шалгана
           } else {
             i++;
           }
