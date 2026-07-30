@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Хавтан Зүсэлт Тооцоолуур Pro v1.6</title>
+  <title>Хавтан Зүсэлт Тооцоолуур Pro v1.7</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
@@ -24,8 +24,8 @@
     .tab-add-btn { background: #34a853; color: white; border: none; border-radius: 8px; padding: 8px 12px; cursor: pointer; font-weight: bold; font-size: 13px; }
     
     .input-group { display: flex; gap: 6px; margin-bottom: 10px; align-items: center; flex-wrap: nowrap; }
-    .part-num { font-weight: bold; width: 28px; text-align: right; color: #1a73e8; font-size: 13px; }
-    input { padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; flex: 1; min-width: 50px; outline: none; }
+    .part-num { font-weight: bold; width: 32px; text-align: right; color: #1a73e8; font-size: 13px; }
+    input { padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; flex: 1; min-width: 45px; outline: none; }
     input:focus { border-color: #1a73e8; }
     
     button.main-btn { width: 100%; padding: 14px; background: #1a73e8; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; font-weight: bold; }
@@ -53,7 +53,7 @@
 </head>
 <body>
 
-  <h2>✂️ Хавтан Өрөлтийн Тооцоолуур Pro <span style="font-size: 14px; color: #1a73e8; font-weight: normal;">v1.6</span></h2>
+  <h2>✂️ Хавтан Өрөлтийн Тооцоолуур Pro <span style="font-size: 14px; color: #1a73e8; font-weight: normal;">v1.7</span></h2>
 
   <div class="data-tools">
     <button class="btn-tool btn-copy" onclick="copyDataText()">📋 Текст хуулах</button>
@@ -85,7 +85,7 @@
       </div>
       <div class="input-group">
         <label style="min-width:70px; font-size:12px; font-weight:bold;">Эмжээр:</label>
-        <input type="number" id="edgeVal" placeholder="4 талын мм" value="2" oninput="autoSave()">
+        <input type="number" id="edgeVal" placeholder="4 талын мм" value="0" oninput="autoSave()">
       </div>
       <button class="btn-delete" style="width:100%; margin-top:5px;" onclick="deleteCurrentTab()">🗑️ Энэ хавтанг устгах</button>
     </div>
@@ -97,7 +97,7 @@
     <button class="btn-add" onclick="addPartInput()">+ Энэ хавтанд деталь нэмэх</button>
   </div>
 
-  <button class="main-btn" onclick="calculateNesting()">🧮 100% Багтаамжтай Өрөлт Хийх</button>
+  <button class="main-btn" onclick="calculateNesting()">🧮 MaxCut Өрөлт Хийх</button>
 
   <div class="card canvas-container" style="margin-top: 20px;">
     <h3 id="result-header-title">3. Зүсэлтийн зураглал</h3>
@@ -113,7 +113,7 @@
     let activeTabId = null;
 
     function initData() {
-      const savedSheets = localStorage.getItem('cut_sheets_v1_6');
+      const savedSheets = localStorage.getItem('cut_sheets_v1_7');
 
       if (savedSheets) {
         sheetsData = JSON.parse(savedSheets);
@@ -125,8 +125,8 @@
             w: 2800, 
             h: 2070, 
             count: 3, 
-            kerf: 5,
-            edge: 2,
+            kerf: 4,
+            edge: 0,
             parts: [
               { w: 2775, h: 582, count: 1 },
               { w: 2775, h: 578, count: 2 },
@@ -160,7 +160,7 @@
 
     function autoSave() {
       saveCurrentTabFields();
-      localStorage.setItem('cut_sheets_v1_6', JSON.stringify(sheetsData));
+      localStorage.setItem('cut_sheets_v1_7', JSON.stringify(sheetsData));
     }
 
     function saveCurrentTabFields() {
@@ -269,7 +269,7 @@
         w: 2800,
         h: 2070,
         count: 3,
-        kerf: 5,
+        kerf: 4,
         edge: 0,
         parts: [{ w: 500, h: 300, count: 1 }]
       });
@@ -326,7 +326,7 @@
           if (Array.isArray(imported)) {
             sheetsData = imported;
             activeTabId = sheetsData[0].id;
-            localStorage.setItem('cut_sheets_v1_6', JSON.stringify(sheetsData));
+            localStorage.setItem('cut_sheets_v1_7', JSON.stringify(sheetsData));
             renderTabs();
             clearResults();
             alert("✅ Хэмжээнүүд амжилттай солигдлоо!");
@@ -382,7 +382,7 @@
       reader.readAsArrayBuffer(file);
     }
 
-    // MULTI-TRIAL ADVANCED PACKING ALGORITHM
+    // ADVANCED MAXCUT PACKING ALGORITHM
     function calculateNesting() {
       autoSave();
 
@@ -398,7 +398,7 @@
       let kerf = currentSheet.kerf || 0;
 
       let basePartsList = [];
-      let partId = 1;
+      let partIdx = 1;
       (currentSheet.parts || []).forEach(p => {
         if (p.w && p.h && p.count) {
           let cutW = Math.max(10, p.w - (edge * 2));
@@ -406,31 +406,32 @@
           
           for (let c = 0; c < p.count; c++) {
             basePartsList.push({ 
-              id: partId,
+              idx: partIdx,
               w: cutW, 
               h: cutH, 
-              label: `#${partId} (${p.w}x${p.h})` 
+              label: `${partIdx}. ${p.w}x${p.h}` 
             });
           }
-          partId++;
+          partIdx++;
         }
       });
 
-      // Хэд хэдэн эрэмбэлэх аргаар суулгаж үзээд хамгийн цөөхөн үлдэгдэлтэйг нь сонгоно
+      // MaxCut эрэмбэлэх болон өрөх олон шаталт туршилтууд
       let bestResult = null;
       let minRemaining = Infinity;
 
-      let sortMethods = [
-        (a,b) => (Math.max(b.w, b.h) - Math.max(a.w, a.h)) || ((b.w*b.h) - (a.w*a.h)),
-        (a,b) => ((b.w*b.h) - (a.w*a.h)),
-        (a,b) => (b.w - a.w) || (b.h - a.h),
-        (a,b) => (b.h - a.h) || (b.w - a.w),
-        (a,b) => (Math.min(b.w, b.h) - Math.min(a.w, a.h))
+      let packStrategies = [
+        // 1. MaxCut төрлийн босоо/хэвтээ зүсэлтийн уян хатан эрэмбэ
+        (a, b) => (Math.max(b.w, b.h) - Math.max(a.w, a.h)) || (b.w * b.h - a.w * a.h),
+        (a, b) => (b.w * b.h - a.w * a.h),
+        (a, b) => (b.w - a.w) || (b.h - a.h),
+        (a, b) => (b.h - a.h) || (b.w - a.w),
+        (a, b) => (Math.min(b.w, b.h) - Math.min(a.w, a.h))
       ];
 
-      sortMethods.forEach(fn => {
-        let testList = [...basePartsList].sort(fn);
-        let res = packMaxRectsTrial(testList, sheetW, sheetH, kerf, currentSheet.count);
+      packStrategies.forEach(sortFn => {
+        let testList = [...basePartsList].sort(sortFn);
+        let res = packGuillotineMaxCut(testList, sheetW, sheetH, kerf, currentSheet.count);
         if (res.remaining.length < minRemaining) {
           minRemaining = res.remaining.length;
           bestResult = res;
@@ -445,38 +446,87 @@
       statusDiv.style.display = "block";
       if(bestResult.remaining.length > 0) {
         statusDiv.className = "status-msg status-error";
-        statusDiv.innerText = `⚠️ Анхаар: ${currentSheet.count} хавтанд ${bestResult.remaining.length} деталь багтсангүй! Хавтангийн тоог нэмнэ үү.`;
+        statusDiv.innerText = `⚠️ Анхаар: ${currentSheet.count} хавтанд ${bestResult.remaining.length} деталь багтсангүй! Хэрэв багтахгүй байвал Эмжээр (Edge) болон Ир (Kerf)-ийн зайд тохиргоо хийнэ үү.`;
       } else {
         statusDiv.className = "status-msg status-success";
-        statusDiv.innerText = `🎉 АМЖИЛТТАЙ! Бүх 26 ширхэг деталь (эмжээр -${edge*2}мм хасагдаад) ЯГ ${bestResult.sheets.length} ХАВТАНД 100% БАГТЛАА!`;
+        statusDiv.innerText = `🎉 АМЖИЛТТАЙ! Бүх деталь MaxCut зарчмаар ЯГ ${bestResult.sheets.length} ХАВТАНД 100% БАГТЛАА!`;
       }
 
       document.getElementById('pdfBtn').style.display = "block";
     }
 
-    function packMaxRectsTrial(partsList, sheetW, sheetH, kerf, maxSheets) {
+    function packGuillotineMaxCut(partsList, sheetW, sheetH, kerf, maxSheets) {
       let remaining = [...partsList];
       let sheets = [];
 
       while (remaining.length > 0 && sheets.length < maxSheets) {
         let placed = [];
-        let freeRects = [{ x: 0, y: 0, w: sheetW, h: sheetH }];
+        let freeNodes = [{ x: 0, y: 0, w: sheetW, h: sheetH }];
 
         let i = 0;
         while (i < remaining.length) {
           let part = remaining[i];
-          let best = findBestRect(freeRects, part);
+          let bestFit = null;
+          let bestNodeIndex = -1;
+          let rotated = false;
+          let minShortSide = Infinity;
 
-          if (best) {
+          // Guillotine Best Short Side Fit
+          for (let n = 0; n < freeNodes.length; n++) {
+            let node = freeNodes[n];
+
+            // Хэвтээ байрлуулах
+            if (part.w <= node.w && part.h <= node.h) {
+              let leftoverX = node.w - part.w;
+              let leftoverY = node.h - part.h;
+              let shortSide = Math.min(leftoverX, leftoverY);
+              if (shortSide < minShortSide) {
+                minShortSide = shortSide;
+                bestFit = node;
+                bestNodeIndex = n;
+                rotated = false;
+              }
+            }
+
+            // 90 градус эргүүлж босоо байрлуулах
+            if (part.h <= node.w && part.w <= node.h) {
+              let leftoverX = node.w - part.h;
+              let leftoverY = node.h - part.w;
+              let shortSide = Math.min(leftoverX, leftoverY);
+              if (shortSide < minShortSide) {
+                minShortSide = shortSide;
+                bestFit = node;
+                bestNodeIndex = n;
+                rotated = true;
+              }
+            }
+          }
+
+          if (bestFit) {
+            let pw = rotated ? part.h : part.w;
+            let ph = rotated ? part.w : part.h;
+
             placed.push({
-              x: best.x,
-              y: best.y,
-              w: best.w,
-              h: best.h,
+              x: bestFit.x,
+              y: bestFit.y,
+              w: pw,
+              h: ph,
               label: part.label
             });
 
-            splitFreeRects(freeRects, best.x, best.y, best.w, best.h, kerf);
+            // Зайлшгүй Guillotine зүсэлтийн хуваалт хийх
+            let node = freeNodes.splice(bestNodeIndex, 1)[0];
+            let wRemain = node.w - pw - kerf;
+            let hRemain = node.h - ph - kerf;
+
+            if (wRemain > hRemain) {
+              if (wRemain > 0) freeNodes.push({ x: node.x + pw + kerf, y: node.y, w: wRemain, h: node.h });
+              if (hRemain > 0) freeNodes.push({ x: node.x, y: node.y + ph + kerf, w: pw, h: hRemain });
+            } else {
+              if (hRemain > 0) freeNodes.push({ x: node.x, y: node.y + ph + kerf, w: node.w, h: hRemain });
+              if (wRemain > 0) freeNodes.push({ x: node.x + pw + kerf, y: node.y, w: wRemain, h: ph });
+            }
+
             remaining.splice(i, 1);
             i = 0;
           } else {
@@ -492,77 +542,6 @@
       }
 
       return { sheets: sheets, remaining: remaining };
-    }
-
-    function findBestRect(freeRects, part) {
-      let best = null;
-      let minBSSF = Infinity;
-
-      freeRects.forEach(r => {
-        if (part.w <= r.w && part.h <= r.h) {
-          let leftoverX = r.w - part.w;
-          let leftoverY = r.h - part.h;
-          let shortSide = Math.min(leftoverX, leftoverY);
-          if (shortSide < minBSSF) {
-            minBSSF = shortSide;
-            best = { x: r.x, y: r.y, w: part.w, h: part.h };
-          }
-        }
-        if (part.h <= r.w && part.w <= r.h) {
-          let leftoverX = r.w - part.h;
-          let leftoverY = r.h - part.w;
-          let shortSide = Math.min(leftoverX, leftoverY);
-          if (shortSide < minBSSF) {
-            minBSSF = shortSide;
-            best = { x: r.x, y: r.y, w: part.h, h: part.w };
-          }
-        }
-      });
-
-      return best;
-    }
-
-    function splitFreeRects(freeRects, px, py, pw, ph, kerf) {
-      let pwK = pw + kerf;
-      let phK = ph + kerf;
-
-      for (let i = freeRects.length - 1; i >= 0; i--) {
-        let r = freeRects[i];
-
-        if (px < r.x + r.w && px + pwK > r.x && py < r.y + r.h && py + phK > r.y) {
-          if (px + pwK < r.x + r.w) {
-            freeRects.push({ x: px + pwK, y: r.y, w: r.x + r.w - (px + pwK), h: r.h });
-          }
-          if (px > r.x && px < r.x + r.w) {
-            freeRects.push({ x: r.x, y: r.y, w: px - r.x, h: r.h });
-          }
-          if (py + phK < r.y + r.h) {
-            freeRects.push({ x: r.x, y: py + phK, w: r.w, h: r.y + r.h - (py + phK) });
-          }
-          if (py > r.y && py < r.y + r.h) {
-            freeRects.push({ x: r.x, y: r.y, w: r.w, h: py - r.y });
-          }
-
-          freeRects.splice(i, 1);
-        }
-      }
-
-      for (let i = 0; i < freeRects.length; i++) {
-        for (let j = freeRects.length - 1; j > i; j--) {
-          if (isContained(freeRects[i], freeRects[j])) {
-            freeRects.splice(i, 1);
-            i--;
-            break;
-          }
-          if (isContained(freeRects[j], freeRects[i])) {
-            freeRects.splice(j, 1);
-          }
-        }
-      }
-    }
-
-    function isContained(a, b) {
-      return a.x >= b.x && a.y >= b.y && a.x + a.w <= b.x + b.w && a.y + a.h <= b.y + b.h;
     }
 
     function renderSingleSheetCanvas(sheetName, sheetW, sheetH, placedParts, sheetIndex) {
@@ -600,9 +579,9 @@
         ctx.lineWidth = 1.5;
         ctx.strokeRect(x, y, w, h);
 
-        if (w > 12 && h > 12) {
+        if (w > 10 && h > 10) {
           ctx.fillStyle = "#ffffff";
-          ctx.font = `bold ${Math.max(10, Math.floor(12 * scale))}px sans-serif`;
+          ctx.font = `bold ${Math.max(10, Math.floor(11 * scale))}px sans-serif`;
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
           ctx.fillText(p.label, x + w / 2, y + h / 2);
