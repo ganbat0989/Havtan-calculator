@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Хавтан Зүсэлт Тооцоолуур Pro v3.8 (v3.5 руу буцлаа)</title>
+  <title>Хавтан Зүсэлт Тооцоолуур Pro v3.9</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
@@ -64,7 +64,7 @@
 </head>
 <body>
 
-  <h2>✂️ Хавтан Өрөлтийн Тооцоолуур Pro <span style="font-size: 14px; color: #1a73e8; font-weight: normal;">v3.8 (Ухаалаг Шахмал)</span></h2>
+  <h2>✂️ Хавтан Өрөлтийн Тооцоолуур Pro <span style="font-size: 14px; color: #1a73e8; font-weight: normal;">v3.9</span></h2>
 
   <div class="sticky-header-container">
     <div class="card" style="margin-bottom: 0;">
@@ -142,9 +142,9 @@
     let activeTabId = null;
 
     function initData() {
-      const savedSheets = localStorage.getItem('cut_sheets_v3_8') || 
-                          localStorage.getItem('cut_sheets_v3_5') || 
-                          localStorage.getItem('cut_sheets_v3_4');
+      const savedSheets = localStorage.getItem('cut_sheets_v3_9') || 
+                          localStorage.getItem('cut_sheets_v3_8') || 
+                          localStorage.getItem('cut_sheets_v3_5');
 
       if (savedSheets) {
         try {
@@ -176,7 +176,7 @@
 
     function autoSave() {
       saveCurrentTabFieldsStateOnly();
-      localStorage.setItem('cut_sheets_v3_8', JSON.stringify(sheetsData));
+      localStorage.setItem('cut_sheets_v3_9', JSON.stringify(sheetsData));
     }
 
     function autoSaveAndRefreshLive() {
@@ -281,20 +281,24 @@
       container.innerHTML = "";
 
       parts.forEach((p, idx) => {
-        if (p.hasEdge === undefined) p.hasEdge = true;
+        if (p.hasEdge === undefined) p.hasEdge = false;
         if (p.isDoor === undefined) p.isDoor = false;
-        if (p.doorMinusW === undefined) p.doorMinusW = true;
-        if (p.doorMinusH === undefined) p.doorMinusH = true;
+        if (p.doorMinusW === undefined) p.doorMinusW = false;
+        if (p.doorMinusH === undefined) p.doorMinusH = false;
+        if (p.eU1 === undefined) p.eU1 = false;
+        if (p.eU2 === undefined) p.eU2 = false;
+        if (p.eO1 === undefined) p.eO1 = false;
+        if (p.eO2 === undefined) p.eO2 = false;
 
         const div = document.createElement('div');
         div.className = 'input-group part-item';
         div.innerHTML = `
           <span class="part-num">${idx + 1}.</span>
-          <input type="text" inputmode="numeric" class="pW inp-size" placeholder="Бэлэн Урт" value="${p.w}" oninput="onPartInputChanged()">
+          <input type="text" inputmode="numeric" class="pW inp-size" placeholder="Бэлэн Урт" value="${p.w || ''}" oninput="onPartInputChanged()">
           <span>х</span>
-          <input type="text" inputmode="numeric" class="pH inp-size" placeholder="Бэлэн Өргөн" value="${p.h}" oninput="onPartInputChanged()">
+          <input type="text" inputmode="numeric" class="pH inp-size" placeholder="Бэлэн Өргөн" value="${p.h || ''}" oninput="onPartInputChanged()">
           <span>-></span>
-          <input type="text" inputmode="numeric" class="pCount inp-count" placeholder="Тоо" value="${p.count}" oninput="onPartInputChanged()">
+          <input type="text" inputmode="numeric" class="pCount inp-count" placeholder="Тоо" value="${p.count !== undefined ? p.count : 1}" oninput="onPartInputChanged()">
           <span>ш</span>
 
           <div class="extra-selectors">
@@ -429,7 +433,7 @@
       const current = sheetsData.find(s => s.id === activeTabId);
       if (current) {
         if (!current.parts) current.parts = [];
-        current.parts.push({ w: 500, h: 300, count: 1, hasEdge: true, isDoor: false, doorMinusW: true, doorMinusH: true, eU1: true, eU2: true, eO1: true, eO2: true });
+        current.parts.push({ w: '', h: '', count: 1, hasEdge: false, isDoor: false, doorMinusW: false, doorMinusH: false, eU1: false, eU2: false, eO1: false, eO2: false });
         renderParts(current.parts);
         autoSave();
       }
@@ -464,7 +468,7 @@
               let h = parseFloat(row[1]);
               let count = parseInt(row[2]) || 1;
               if (!isNaN(w) && !isNaN(h) && w > 0 && h > 0) {
-                importedParts.push({ w: w, h: h, count: count, hasEdge: true, isDoor: false, doorMinusW: true, doorMinusH: true, eU1: true, eU2: true, eO1: true, eO2: true });
+                importedParts.push({ w: w, h: h, count: count, hasEdge: false, isDoor: false, doorMinusW: false, doorMinusH: false, eU1: false, eU2: false, eO1: false, eO2: false });
               }
             }
           });
@@ -530,6 +534,11 @@
           partIdx++;
         }
       });
+
+      if (basePartsList.length === 0) {
+        alert("Тооцоолох деталь алга байна!");
+        return;
+      }
 
       let bestResult = null;
       let minUnplacedCount = Infinity;
@@ -705,6 +714,7 @@
       ctx.fillStyle = "#dcdde1";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+      placedParts.blank = true;
       placedParts.forEach(p => {
         let x = p.x * scale;
         let y = p.y * scale;
