@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Хавтан Зүсэлт Тооцоолуур Pro v3.0</title>
+  <title>Хавтан Зүсэлт Тооцоолуур Pro v3.1</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
@@ -29,8 +29,8 @@
     .input-wrapper { position: relative; flex: 1; display: flex; flex-direction: column; }
     .input-wrapper label { font-size: 10px; font-weight: bold; color: #666; margin-bottom: 2px; }
 
-    .edge-selectors, .extra-selectors { display: flex; gap: 6px; align-items: center; background: #eef3fc; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; color: #1a73e8; }
-    .edge-selectors label, .extra-selectors label { display: flex; align-items: center; cursor: pointer; gap: 2px; }
+    .edge-selectors, .extra-selectors, .door-axis-selectors { display: flex; gap: 6px; align-items: center; background: #eef3fc; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; color: #1a73e8; }
+    .edge-selectors label, .extra-selectors label, .door-axis-selectors label { display: flex; align-items: center; cursor: pointer; gap: 2px; }
 
     .cut-size-display { font-size: 12px; font-weight: bold; color: #d93025; background: #fce8e6; padding: 6px 10px; border-radius: 6px; white-space: nowrap; }
 
@@ -64,7 +64,7 @@
 </head>
 <body>
 
-  <h2>✂️ Хавтан Өрөлтийн Тооцоолуур Pro <span style="font-size: 14px; color: #1a73e8; font-weight: normal;">v3.0</span></h2>
+  <h2>✂️ Хавтан Өрөлтийн Тооцоолуур Pro <span style="font-size: 14px; color: #1a73e8; font-weight: normal;">v3.1</span></h2>
 
   <!-- FREEZE / STICKY SECTION -->
   <div class="sticky-header-container">
@@ -103,7 +103,7 @@
             <input type="number" id="edgeVal" placeholder="Эмжээр (мм)" oninput="autoSaveAndRefresh()">
           </div>
           <div class="input-wrapper">
-            <label>Хавхлага/Хаалга хоорондын зай (мм):</label>
+            <label>Хаалга хоорондын зай (мм):</label>
             <input type="number" id="doorGap" placeholder="Зай (мм)" oninput="autoSaveAndRefresh()">
           </div>
         </div>
@@ -144,9 +144,9 @@
     let activeTabId = null;
 
     function initData() {
-      const savedSheets = localStorage.getItem('cut_sheets_v3_0') || 
-                          localStorage.getItem('cut_sheets_v2_9') || 
-                          localStorage.getItem('cut_sheets_v2_8');
+      const savedSheets = localStorage.getItem('cut_sheets_v3_1') || 
+                          localStorage.getItem('cut_sheets_v3_0') || 
+                          localStorage.getItem('cut_sheets_v2_9');
 
       if (savedSheets) {
         try {
@@ -178,7 +178,7 @@
 
     function autoSave() {
       saveCurrentTabFields();
-      localStorage.setItem('cut_sheets_v3_0', JSON.stringify(sheetsData));
+      localStorage.setItem('cut_sheets_v3_1', JSON.stringify(sheetsData));
     }
 
     function autoSaveAndRefresh() {
@@ -207,6 +207,8 @@
         const eO2s = document.querySelectorAll('.eO2');
         const hasEdges = document.querySelectorAll('.hasEdge');
         const isDoors = document.querySelectorAll('.isDoor');
+        const doorMinusW = document.querySelectorAll('.doorMinusW');
+        const doorMinusH = document.querySelectorAll('.doorMinusH');
 
         current.parts = [];
         for (let i = 0; i < pWs.length; i++) {
@@ -216,6 +218,8 @@
             count: parseInt(pCounts[i].value) || 1,
             hasEdge: hasEdges[i] ? hasEdges[i].checked : true,
             isDoor: isDoors[i] ? isDoors[i].checked : false,
+            doorMinusW: doorMinusW[i] ? doorMinusW[i].checked : true,
+            doorMinusH: doorMinusH[i] ? doorMinusH[i].checked : true,
             eU1: eU1s[i] ? eU1s[i].checked : false,
             eU2: eU2s[i] ? eU2s[i].checked : false,
             eO1: eO1s[i] ? eO1s[i].checked : false,
@@ -292,23 +296,24 @@
       const doorGapVal = parseFloat(document.getElementById('doorGap').value) || 0;
 
       parts.forEach((p, idx) => {
-        // Утгуудын анхны утга байхгүй бол стандарт утга оноох
         if (p.hasEdge === undefined) p.hasEdge = true;
         if (p.isDoor === undefined) p.isDoor = false;
+        if (p.doorMinusW === undefined) p.doorMinusW = true;
+        if (p.doorMinusH === undefined) p.doorMinusH = true;
 
         let cutW = p.w;
         let cutH = p.h;
 
-        // Хэрэв эмжээр наах эсэх сонгогдсон бол хэмжээнээс хасна
+        // Эмжээр хасах
         if (p.hasEdge) {
           cutW -= ((p.eO1 ? edgeThickness : 0) + (p.eO2 ? edgeThickness : 0));
           cutH -= ((p.eU1 ? edgeThickness : 0) + (p.eU2 ? edgeThickness : 0));
         }
 
-        // Хэрэв хаалга бол хаалга хоорондын зайг хасна
+        // Хаалганы зай хасах (сонгосон тэнхлэгээр)
         if (p.isDoor && doorGapVal > 0) {
-          cutW -= doorGapVal;
-          cutH -= doorGapVal;
+          if (p.doorMinusW) cutW -= doorGapVal;
+          if (p.doorMinusH) cutH -= doorGapVal;
         }
 
         const div = document.createElement('div');
@@ -324,7 +329,13 @@
 
           <div class="extra-selectors">
             <label><input type="checkbox" class="hasEdge" ${p.hasEdge ? 'checked' : ''} onchange="toggleEdgeUI(${idx}, this.checked)"> Эмжээр</label>
-            <label><input type="checkbox" class="isDoor" ${p.isDoor ? 'checked' : ''} onchange="updateItemAndSave()"> Хаалга</label>
+            <label><input type="checkbox" class="isDoor" ${p.isDoor ? 'checked' : ''} onchange="toggleDoorUI(${idx}, this.checked)"> Хаалга</label>
+          </div>
+
+          <div class="door-axis-selectors" id="doorAxisBox_${idx}" style="display: ${p.isDoor ? 'flex' : 'none'};">
+            <span>Зай хасах:</span>
+            <label><input type="checkbox" class="doorMinusW" ${p.doorMinusW ? 'checked' : ''} onchange="updateItemAndSave()"> Урт</label>
+            <label><input type="checkbox" class="doorMinusH" ${p.doorMinusH ? 'checked' : ''} onchange="updateItemAndSave()"> Өргөн</label>
           </div>
 
           <div class="edge-selectors" id="edgeBox_${idx}" style="display: ${p.hasEdge ? 'flex' : 'none'};">
@@ -349,6 +360,14 @@
       const edgeBox = document.getElementById(`edgeBox_${idx}`);
       if (edgeBox) {
         edgeBox.style.display = isChecked ? 'flex' : 'none';
+      }
+      updateItemAndSave();
+    }
+
+    function toggleDoorUI(idx, isChecked) {
+      const doorAxisBox = document.getElementById(`doorAxisBox_${idx}`);
+      if (doorAxisBox) {
+        doorAxisBox.style.display = isChecked ? 'flex' : 'none';
       }
       updateItemAndSave();
     }
@@ -396,7 +415,7 @@
       const current = sheetsData.find(s => s.id === activeTabId);
       if (current) {
         if (!current.parts) current.parts = [];
-        current.parts.push({ w: 500, h: 300, count: 1, hasEdge: true, isDoor: false, eU1: true, eU2: true, eO1: true, eO2: true });
+        current.parts.push({ w: 500, h: 300, count: 1, hasEdge: true, isDoor: false, doorMinusW: true, doorMinusH: true, eU1: true, eU2: true, eO1: true, eO2: true });
         renderParts(current.parts);
         autoSave();
       }
@@ -431,7 +450,7 @@
               let h = parseFloat(row[1]);
               let count = parseInt(row[2]) || 1;
               if (!isNaN(w) && !isNaN(h) && w > 0 && h > 0) {
-                importedParts.push({ w: w, h: h, count: count, hasEdge: true, isDoor: false, eU1: true, eU2: true, eO1: true, eO2: true });
+                importedParts.push({ w: w, h: h, count: count, hasEdge: true, isDoor: false, doorMinusW: true, doorMinusH: true, eU1: true, eU2: true, eO1: true, eO2: true });
               }
             }
           });
@@ -482,8 +501,8 @@
             cutH -= ((p.eU1 ? edge : 0) + (p.eU2 ? edge : 0));
           }
           if (p.isDoor && doorGap > 0) {
-            cutW -= doorGap;
-            cutH -= doorGap;
+            if (p.doorMinusW) cutW -= doorGap;
+            if (p.doorMinusH) cutH -= doorGap;
           }
           
           for (let c = 0; c < p.count; c++) {
