@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MaxCut v10.5 GUILLOTINE ENGINE - Шулуун Зүсэлт & Төрөл</title>
+  <title>MaxCut v11.0 GUILLOTINE ENGINE - Шулуун Зүсэлт (Хаягдал багасгасан)</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
@@ -22,7 +22,7 @@
     
     .input-group { display: flex; gap: 6px; margin-bottom: 8px; align-items: center; flex-wrap: wrap; background: #fafafa; padding: 8px; border-radius: 8px; border: 1px solid #eee; }
     .part-num { font-weight: bold; width: 30px; text-align: right; color: #1a73e8; font-size: 13px; }
-    input[type="text"], select { padding: 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 13px; outline: none; }
+    input[type="text"] { padding: 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 13px; outline: none; }
     .inp-size { width: 75px; }
     .inp-count { width: 55px; }
 
@@ -32,17 +32,21 @@
     .edge-selectors, .extra-selectors, .door-axis-selectors { display: flex; gap: 6px; align-items: center; background: #eef3fc; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; color: #1a73e8; }
     .edge-selectors label, .extra-selectors label, .door-axis-selectors label { display: flex; align-items: center; cursor: pointer; gap: 2px; }
 
+    .master-toggle-bar { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; background: #fff4e5; border: 1px solid #f5c26b; padding: 8px 12px; border-radius: 8px; margin-bottom: 10px; }
+    .master-toggle-bar .mtitle { font-weight: bold; font-size: 12px; color: #b06000; }
+    .master-toggle-bar label { display: flex; align-items: center; gap: 4px; font-size: 12px; font-weight: bold; color: #b06000; cursor: pointer; }
+
     .cut-size-display { font-size: 12px; font-weight: bold; color: #d93025; background: #fce8e6; padding: 6px 10px; border-radius: 6px; white-space: nowrap; }
 
-    .parts-header-actions { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f0f2f5; padding-bottom: 8px; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
+    .parts-header-actions { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f0f2f5; padding-bottom: 8px; margin-bottom: 12px; flex-wrap: wrap; gap: 6px; }
     .btn-excel-tab { background: #107c41; color: white; border: none; border-radius: 6px; padding: 8px 14px; font-weight: bold; font-size: 13px; cursor: pointer; }
-    .btn-delete-all { background: #d93025; color: white; border: none; border-radius: 6px; padding: 8px 14px; font-weight: bold; font-size: 13px; cursor: pointer; }
 
     button.main-btn { width: 100%; padding: 15px; background: #1a73e8; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; font-weight: bold; transition: 0.2s; }
     button.main-btn:hover { background: #1557b0; }
     .btn-pdf { background: #ea4335; color: white; border: none; border-radius: 8px; width: 100%; padding: 12px; font-size: 15px; font-weight: bold; cursor: pointer; margin-bottom: 15px; display: none; }
     .btn-add { background: #34a853; color: white; border: none; border-radius: 6px; width: 100%; margin-top: 5px; padding: 10px; font-size: 14px; font-weight: bold; cursor: pointer; }
     .btn-delete { background: #d93025; color: white; border: none; border-radius: 6px; padding: 6px 10px; cursor: pointer; font-weight: bold; font-size: 12px; }
+    .btn-delete-all { background: #b31412; color: white; border: none; border-radius: 6px; width: 100%; margin-top: 6px; padding: 10px; font-size: 14px; font-weight: bold; cursor: pointer; }
     .btn-remove-item { background: #ff4d4d; color: white; border: none; border-radius: 6px; padding: 6px 10px; font-weight: bold; cursor: pointer; margin-left: auto; }
     
     .canvas-container { text-align: center; background: white; padding: 15px; border-radius: 12px; overflow-x: auto; }
@@ -55,6 +59,7 @@
     .status-error { background: #fce8e6; color: #c5221f; border: 1px solid #ea4335; }
     .unplaced-box { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
     .unplaced-badge { background: #ea4335; color: white; padding: 6px 12px; border-radius: 6px; font-weight: bold; font-size: 12px; }
+    .strategy-note { font-size: 11px; color: #5f6368; margin-top: 6px; }
 
     @media print {
       body * { visibility: hidden; }
@@ -66,7 +71,7 @@
 </head>
 <body>
 
-  <h2>✂️ MaxCut v10.5 GUILLOTINE ENGINE (БҮРЭН ШУЛУУН ЗҮСЭЛТ)</h2>
+  <h2>✂️ MaxCut v11.0 GUILLOTINE ENGINE (ХАЯГДАЛ БАГАСГАСАН ШУЛУУН ЗҮСЭЛТ)</h2>
 
   <div class="sticky-header-container">
     <div class="card" style="margin-bottom: 0;">
@@ -78,7 +83,7 @@
             <label>Хавтангийн нэр:</label>
             <input type="text" id="sheetName" placeholder="Нэр" oninput="autoSave()">
           </div>
-          <button class="btn-delete" onclick="deleteCurrentTab()" style="align-self: flex-end; height: 35px;">🗑️ Устгах</button>
+          <button class="btn-delete" onclick="deleteCurrentTab()" style="align-self: flex-end; height: 35px;">🗑️ Хавтан устгах</button>
         </div>
         <div style="display:flex; gap:6px; margin-bottom:8px;">
           <div class="input-wrapper">
@@ -97,7 +102,7 @@
           </div>
           <div class="input-wrapper">
             <label>Ир (мм):</label>
-            <input type="text" inputmode="numeric" id="kerf" value="5" oninput="autoSave()">
+            <input type="text" inputmode="numeric" id="kerf" value="4" oninput="autoSave()">
           </div>
           <div class="input-wrapper">
             <label>Эмжээр (мм):</label>
@@ -106,16 +111,6 @@
           <div class="input-wrapper">
             <label>Зай (мм):</label>
             <input type="text" inputmode="numeric" id="doorGap" value="0" oninput="autoSaveAndRefreshLive()">
-          </div>
-        </div>
-        <div style="display:flex; gap:6px; margin-bottom:8px;">
-          <div class="input-wrapper">
-            <label>Зүсэлтийн төрөл:</label>
-            <select id="globalCutType" onchange="autoSave()" style="padding: 8px; border-radius: 6px; width: 100%;">
-              <option value="straight">Шулуун зүсэлт</option>
-              <option value="cnc">CNC зүсэлт</option>
-              <option value="frezer">Фрезер зүсэлт</option>
-            </select>
           </div>
         </div>
       </div>
@@ -130,15 +125,21 @@
   <div class="card" style="margin-top: 15px;">
     <div class="parts-header-actions">
       <h3 id="parts-header-title">2. Зүсэх деталь хэсгүүд</h3>
-      <div style="display:flex; gap:6px;">
-        <button class="btn-delete-all" onclick="deleteAllParts()">🗑️ Бүх деталийг устгах</button>
-        <button class="btn-excel-tab" onclick="document.getElementById('excelFileInput').click()">📊 Excel файл оруулж ирэх</button>
-        <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" style="display:none;" onchange="importExcelFileForCurrentTab(event)">
-      </div>
+      <button class="btn-excel-tab" onclick="document.getElementById('excelFileInput').click()">📊 Excel файл оруулж ирэх</button>
+      <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" style="display:none;" onchange="importExcelFileForCurrentTab(event)">
+    </div>
+
+    <div class="master-toggle-bar">
+      <span class="mtitle">⚡ Бүх деталь дээр нэг дор тохируулах:</span>
+      <label><input type="checkbox" id="masterEdge" onchange="applyMasterToggle('hasEdge', this.checked)"> Эмжээр</label>
+      <label><input type="checkbox" id="masterDoor" onchange="applyMasterToggle('isDoor', this.checked)"> Хаалга</label>
+      <label><input type="checkbox" id="masterDoorW" onchange="applyMasterToggle('doorMinusW', this.checked)"> Урт (Хаалганы зай)</label>
+      <label><input type="checkbox" id="masterDoorH" onchange="applyMasterToggle('doorMinusH', this.checked)"> Өргөн (Хаалганы зай)</label>
     </div>
 
     <div id="parts-list"></div>
     <button class="btn-add" onclick="addPartInput()">+ Шинэ деталь нэмэх</button>
+    <button class="btn-delete-all" onclick="deleteAllParts()">🗑️ Бүх деталийг устгах</button>
   </div>
 
   <button class="main-btn" onclick="calculateNesting()">✂️ ШУЛУУН ЗҮСЭЛТЭЭР ӨРӨХ (GUILLOTINE OPTIMIZATION)</button>
@@ -153,8 +154,9 @@
   </div>
 
   <script>
+    // --- GUILLOTINE BIN PACKING ENGINE (v11.0 - хаягдал багасгасан) ---
     class GuillotineBinPack {
-      constructor(width, height, kerf = 5) {
+      constructor(width, height, kerf = 4) {
         this.binWidth = width;
         this.binHeight = height;
         this.kerf = kerf;
@@ -163,26 +165,56 @@
       }
 
       insert(width, height) {
+        const best = this._findBestPosition(width, height);
+        if (!best) return null;
+
+        const free = this.freeRectangles[best.index];
+        const w = best.rotated ? height : width;
+        const h = best.rotated ? width : height;
+
+        const node = { x: free.x, y: free.y, w: w, h: h, rot: best.rotated };
+
+        this.freeRectangles.splice(best.index, 1);
+        this._splitFreeRect(free, w, h);
+        this._pruneFreeList();
+
+        this.usedRectangles.push(node);
+        return node;
+      }
+
+      // Best Short Side Fit + Best Area Fit tie-break: сонголт хийхдээ хамгийн
+      // бага "үлдэгдэл зай" гаргах байрлалыг сонгож, ижил үед бага талбай
+      // үлдээх сонголтыг илүүд үзнэ. Энэ нь хайчлан хог гарахаас сэргийлнэ.
+      _findBestPosition(width, height) {
         let bestIndex = -1;
         let bestRotated = false;
-        let minShortSide = Infinity;
+        let bestShortSide = Infinity;
+        let bestAreaFit = Infinity;
 
         for (let i = 0; i < this.freeRectangles.length; i++) {
-          let free = this.freeRectangles[i];
+          const free = this.freeRectangles[i];
 
           if (free.w >= width && free.h >= height) {
-            let leftover = Math.min(free.w - width, free.h - height);
-            if (leftover < minShortSide) {
-              minShortSide = leftover;
+            const leftoverH = free.w - width;
+            const leftoverV = free.h - height;
+            const shortSide = Math.min(leftoverH, leftoverV);
+            const areaFit = (free.w * free.h) - (width * height);
+            if (shortSide < bestShortSide || (shortSide === bestShortSide && areaFit < bestAreaFit)) {
+              bestShortSide = shortSide;
+              bestAreaFit = areaFit;
               bestIndex = i;
               bestRotated = false;
             }
           }
 
           if (free.w >= height && free.h >= width) {
-            let leftover = Math.min(free.w - height, free.h - width);
-            if (leftover < minShortSide) {
-              minShortSide = leftover;
+            const leftoverH = free.w - height;
+            const leftoverV = free.h - width;
+            const shortSide = Math.min(leftoverH, leftoverV);
+            const areaFit = (free.w * free.h) - (width * height);
+            if (shortSide < bestShortSide || (shortSide === bestShortSide && areaFit < bestAreaFit)) {
+              bestShortSide = shortSide;
+              bestAreaFit = areaFit;
               bestIndex = i;
               bestRotated = true;
             }
@@ -190,51 +222,193 @@
         }
 
         if (bestIndex === -1) return null;
+        return { index: bestIndex, rotated: bestRotated };
+      }
 
-        let free = this.freeRectangles[bestIndex];
-        let w = bestRotated ? height : width;
-        let h = bestRotated ? width : height;
+      // Чөлөөт талбайг хуваахдаа хоёр өөр аргаар (хэвтээ/босоо тэргүүлэх)
+      // хуваагаад аль нь илүү том, ашиглах боломжтой цул талбай үлдээж
+      // байгааг сонгоно. Энэ нь жижиг хог зурвас гарахаас сэргийлж хаягдлыг
+      // бууруулна.
+      _splitFreeRect(free, w, h) {
+        const w_eff = w + this.kerf;
+        const h_eff = h + this.kerf;
 
-        let node = { x: free.x, y: free.y, w: w, h: h, rot: bestRotated };
+        const remW = free.w - w_eff;
+        const remH = free.h - h_eff;
 
-        this.freeRectangles.splice(bestIndex, 1);
-
-        let w_eff = w + this.kerf;
-        let h_eff = h + this.kerf;
-
-        let remW = free.w - w_eff;
-        let remH = free.h - h_eff;
+        if (remW <= 0 && remH <= 0) return;
 
         if (remW > 0 && remH > 0) {
-          if (free.w >= free.h) {
-            this.freeRectangles.push({ x: free.x + w_eff, y: free.y, w: remW, h: free.h });
-            this.freeRectangles.push({ x: free.x, y: free.y + h_eff, w: w, h: remH });
-          } else {
-            this.freeRectangles.push({ x: free.x, y: free.y + h_eff, w: free.w, h: remH });
-            this.freeRectangles.push({ x: free.x + w_eff, y: free.y, w: remW, h: h });
-          }
+          const optionA = [
+            { x: free.x + w_eff, y: free.y, w: remW, h: free.h },
+            { x: free.x, y: free.y + h_eff, w: w, h: remH }
+          ];
+          const optionB = [
+            { x: free.x, y: free.y + h_eff, w: free.w, h: remH },
+            { x: free.x + w_eff, y: free.y, w: remW, h: h }
+          ];
+
+          const maxA = Math.max(optionA[0].w * optionA[0].h, optionA[1].w * optionA[1].h);
+          const maxB = Math.max(optionB[0].w * optionB[0].h, optionB[1].w * optionB[1].h);
+          const chosen = maxA >= maxB ? optionA : optionB;
+
+          chosen.forEach(r => { if (r.w > 0 && r.h > 0) this.freeRectangles.push(r); });
         } else if (remW > 0) {
           this.freeRectangles.push({ x: free.x + w_eff, y: free.y, w: remW, h: free.h });
         } else if (remH > 0) {
           this.freeRectangles.push({ x: free.x, y: free.y + h_eff, w: free.w, h: remH });
         }
-
-        this.usedRectangles.push(node);
-        return node;
       }
+
+      // Нэг чөлөөт талбай нөгөөгийнхөө дотор бүрэн багтдаг бол илүүц тул
+      // хасна. Энэ нь дараагийн деталийг байрлуулах хайлтыг хурдасгаад
+      // зогсохгүй фрагментаци буурч илүү нягт зүсэлт гарахад тусална.
+      _pruneFreeList() {
+        for (let i = 0; i < this.freeRectangles.length; i++) {
+          for (let j = i + 1; j < this.freeRectangles.length; j++) {
+            if (this._isContained(this.freeRectangles[i], this.freeRectangles[j])) {
+              this.freeRectangles.splice(i, 1);
+              i--;
+              break;
+            }
+            if (this._isContained(this.freeRectangles[j], this.freeRectangles[i])) {
+              this.freeRectangles.splice(j, 1);
+              j--;
+            }
+          }
+        }
+      }
+
+      _isContained(a, b) {
+        return a.x >= b.x && a.y >= b.y && (a.x + a.w) <= (b.x + b.w) && (a.y + a.h) <= (b.y + b.h);
+      }
+
+      totalUsedArea() {
+        return this.usedRectangles.reduce((sum, p) => sum + (p.w * p.h), 0);
+      }
+    }
+
+    // Нэг эрэмбэлэлтийн стратегиар бүх деталийг өрж үзэх туслах функц
+    function packWithStrategy(basePartsList, sheetW, sheetH, kerf, maxSheets) {
+      const bins = [];
+      const unplaced = [];
+
+      basePartsList.forEach(p => {
+        let placed = false;
+
+        for (const b of bins) {
+          const node = b.insert(p.w, p.h);
+          if (node) {
+            node.label = p.label;
+            placed = true;
+            break;
+          }
+        }
+
+        if (!placed) {
+          if (bins.length < maxSheets) {
+            const newBin = new GuillotineBinPack(sheetW, sheetH, kerf);
+            const node = newBin.insert(p.w, p.h);
+            if (node) {
+              node.label = p.label;
+              bins.push(newBin);
+              placed = true;
+            } else {
+              unplaced.push(p);
+            }
+          } else {
+            unplaced.push(p);
+          }
+        }
+      });
+
+      return { bins, unplaced };
+    }
+
+    // Хамгийн бага хаягдалтай хувилбарыг олохын тулд деталийн жагсаалтыг
+    // хэд хэдэн өөр дарааллаар (эрэмбэлэлтийн стратегиар) туршиж, хамгийн
+    // сайн үр дүнг (хамгийн цөөн багтаагүй → хамгийн цөөн хавтан → хамгийн
+    // бага хаягдал) сонгоно.
+    function packBestOfStrategies(basePartsList, sheetW, sheetH, kerf, maxSheets) {
+      const strategies = [
+        { name: "Урт тал буурахаар", fn: (a, b) => (Math.max(b.w, b.h) - Math.max(a.w, a.h)) || (b.area - a.area) },
+        { name: "Талбай буурахаар", fn: (a, b) => b.area - a.area },
+        { name: "Урт (W) буурахаар", fn: (a, b) => (b.w - a.w) || (b.h - a.h) },
+        { name: "Өргөн (H) буурахаар", fn: (a, b) => (b.h - a.h) || (b.w - a.w) },
+        { name: "Периметр буурахаар", fn: (a, b) => (b.w + b.h) - (a.w + a.h) }
+      ];
+
+      let best = null;
+
+      strategies.forEach(strategy => {
+        const listCopy = basePartsList.slice().sort(strategy.fn);
+        const result = packWithStrategy(listCopy, sheetW, sheetH, kerf, maxSheets);
+
+        const usedArea = result.bins.reduce((s, b) => s + b.totalUsedArea(), 0);
+        const totalArea = result.bins.length * sheetW * sheetH;
+        const waste = totalArea > 0 ? (totalArea - usedArea) : Infinity;
+
+        const score = { unplacedCount: result.unplaced.length, binCount: result.bins.length, waste };
+
+        const isBetter = !best || (
+          score.unplacedCount !== best.score.unplacedCount ? score.unplacedCount < best.score.unplacedCount :
+          score.binCount !== best.score.binCount ? score.binCount < best.score.binCount :
+          score.waste < best.score.waste
+        );
+
+        if (isBetter) {
+          best = { bins: result.bins, unplaced: result.unplaced, score, strategyName: strategy.name };
+        }
+      });
+
+      return best;
     }
 
     const agtDefaultParts = [
       { w: 2775, h: 700, count: 1, eU1: true, eU2: true, eO1: true, eO2: true },
       { w: 2775, h: 350, count: 1, eU1: true, eU2: true, eO1: true, eO2: true },
-      { w: 346, h: 595, count: 2, eU1: true, eU2: true, eO1: true, eO2: true }
+      { w: 742, h: 58, count: 1, eU1: true, eU2: true, eO1: true, eO2: true },
+      { w: 1076, h: 58, count: 1, eU1: true, eU2: true, eO1: true, eO2: true },
+      { w: 948, h: 55, count: 1, eU1: true, eU2: true, eO1: true, eO2: true },
+      { w: 700, h: 55, count: 1, eU1: true, eU2: true, eO1: true, eO2: true },
+      { w: 1917, h: 55, count: 1, eU1: true, eU2: true, eO1: true, eO2: true },
+      { w: 2775, h: 800, count: 1, eU1: true, eU2: true, eO1: true, eO2: true },
+      { w: 346, h: 595, count: 2, eU1: true, eU2: true, eO1: true, eO2: true },
+      { w: 393, h: 345, count: 1, eU1: true, eU2: true, eO1: true, eO2: true },
+      { w: 318, h: 398, count: 1, eU1: true, eU2: true, eO1: true, eO2: true },
+      { w: 300, h: 782, count: 1, eU1: true, eU2: true, eO1: true, eO2: true },
+      { w: 2720, h: 600, count: 1, eU1: true, eU2: true, eO1: true, eO2: true },
+      { w: 500, h: 1081, count: 2, eU1: true, eU2: true, eO1: true, eO2: true },
+      { w: 592, h: 398, count: 1, eU1: true, eU2: true, eO1: true, eO2: true },
+      { w: 742, h: 76, count: 1, eU1: true, eU2: true, eO1: true, eO2: true },
+      { w: 1076, h: 76, count: 1, eU1: true, eU2: true, eO1: true, eO2: true },
+      { w: 612, h: 55, count: 1, eU1: true, eU2: true, eO1: true, eO2: true },
+      { w: 727, h: 595, count: 1, eU1: true, eU2: true, eO1: true, eO2: true },
+      { w: 727, h: 275, count: 1, eU1: true, eU2: true, eO1: true, eO2: true },
+      { w: 727, h: 401, count: 1, eU1: true, eU2: true, eO1: true, eO2: true },
+      { w: 762, h: 680, count: 1, eU1: true, eU2: true, eO1: true, eO2: true },
+      { w: 500, h: 746, count: 1, eU1: true, eU2: true, eO1: true, eO2: true },
+      { w: 393, h: 446, count: 3, eU1: true, eU2: true, eO1: true, eO2: true },
+      { w: 445, h: 329, count: 1, eU1: true, eU2: true, eO1: true, eO2: true },
+      { w: 445, h: 445, count: 1, eU1: true, eU2: true, eO1: true, eO2: true },
+      { w: 445, h: 386, count: 1, eU1: true, eU2: true, eO1: true, eO2: true },
+      { w: 393, h: 345, count: 1, eU1: true, eU2: true, eO1: true, eO2: true },
+      { w: 500, h: 746, count: 1, eU1: true, eU2: true, eO1: true, eO2: true },
+      { w: 865, h: 460, count: 2, eU1: true, eU2: true, eO1: true, eO2: true },
+      { w: 393, h: 446, count: 1, eU1: true, eU2: true, eO1: true, eO2: true },
+      { w: 445, h: 329, count: 1, eU1: true, eU2: true, eO1: true, eO2: true },
+      { w: 727, h: 275, count: 1, eU1: true, eU2: true, eO1: true, eO2: true },
+      { w: 727, h: 195, count: 1, eU1: true, eU2: true, eO1: true, eO2: true },
+      { w: 862, h: 100, count: 1, eU1: true, eU2: true, eO1: true, eO2: true },
+      { w: 762, h: 100, count: 1, eU1: true, eU2: true, eO1: true, eO2: true },
+      { w: 1887, h: 55, count: 1, eU1: true, eU2: true, eO1: true, eO2: true }
     ];
 
     let sheetsData = [];
     let activeTabId = null;
 
     function initData() {
-      const savedSheets = localStorage.getItem('cut_sheets_v10_5');
+      const savedSheets = localStorage.getItem('cut_sheets_v10_0');
       if (savedSheets) {
         try { sheetsData = JSON.parse(savedSheets); } catch(e) { sheetsData = null; }
       } 
@@ -243,7 +417,7 @@
           { 
             id: 1, 
             name: "AGT Зүсвэр (2800х1220)", 
-            w: 2800, h: 1220, count: 5, kerf: 5, edge: 0, doorGap: 0, cutType: 'straight',
+            w: 2800, h: 1220, count: 5, kerf: 4, edge: 0, doorGap: 0,
             parts: JSON.parse(JSON.stringify(agtDefaultParts))
           }
         ];
@@ -254,12 +428,13 @@
 
     function autoSave() {
       saveCurrentTabFieldsStateOnly();
-      localStorage.setItem('cut_sheets_v10_5', JSON.stringify(sheetsData));
+      localStorage.setItem('cut_sheets_v10_0', JSON.stringify(sheetsData));
     }
 
     function autoSaveAndRefreshLive() {
       autoSave();
-      updateCutDisplayLabelsOnly();
+      const current = sheetsData.find(s => s.id === activeTabId);
+      if(current) updateCutDisplayLabelsOnly();
     }
 
     function saveCurrentTabFieldsStateOnly() {
@@ -269,17 +444,16 @@
         current.w = parseFloat(document.getElementById('sheetW').value) || 0;
         current.h = parseFloat(document.getElementById('sheetH').value) || 0;
         current.count = parseInt(document.getElementById('sheetCount').value) || 1;
-        current.kerf = parseFloat(document.getElementById('kerf').value) || 5;
+        current.kerf = parseFloat(document.getElementById('kerf').value) || 4;
         current.edge = parseFloat(document.getElementById('edgeVal').value) || 0;
         current.doorGap = parseFloat(document.getElementById('doorGap').value) || 0;
-        current.cutType = document.getElementById('globalCutType').value;
 
         const partRows = document.querySelectorAll('.part-item');
         current.parts = [];
         partRows.forEach(row => {
           current.parts.push({
-            w: parseFloat(row.querySelector('.pW').value) || '',
-            h: parseFloat(row.querySelector('.pH').value) || '',
+            w: parseFloat(row.querySelector('.pW').value) || 0,
+            h: parseFloat(row.querySelector('.pH').value) || 0,
             count: parseInt(row.querySelector('.pCount').value) || 1,
             hasEdge: row.querySelector('.hasEdge') ? row.querySelector('.hasEdge').checked : false,
             isDoor: row.querySelector('.isDoor') ? row.querySelector('.isDoor').checked : false,
@@ -341,16 +515,26 @@
         document.getElementById('sheetW').value = current.w;
         document.getElementById('sheetH').value = current.h;
         document.getElementById('sheetCount').value = current.count;
-        document.getElementById('kerf').value = current.kerf !== undefined ? current.kerf : 5;
+        document.getElementById('kerf').value = current.kerf !== undefined ? current.kerf : 4;
         document.getElementById('edgeVal').value = current.edge !== undefined ? current.edge : 0;
         document.getElementById('doorGap').value = current.doorGap !== undefined ? current.doorGap : 0;
-        document.getElementById('globalCutType').value = current.cutType || 'straight';
 
         document.getElementById('parts-header-title').innerText = `2. "${current.name}" деталууд`;
-        document.getElementById('result-header-title').innerText = `3. "${current.name}" зүсэлтийн зураглал`;
+        document.getElementById('result-header-title').innerText = `3. "${current.name}" шулуун зүсэлтийн зураглал`;
 
         renderParts(current.parts || []);
+        resetMasterToggles();
       }
+    }
+
+    function resetMasterToggles() {
+      // Хавтан солиход мастер чекбоксуудыг цэвэрлэнэ — эдгээр нь зөвхөн
+      // "нэг товчлуураар бүгдэд адилхан тохируулах" түр товч тул тогтмол
+      // төлөв хадгалахгүй.
+      ['masterEdge','masterDoor','masterDoorW','masterDoorH'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.checked = false;
+      });
     }
 
     function renderParts(parts) {
@@ -362,9 +546,9 @@
         div.className = 'input-group part-item';
         div.innerHTML = `
           <span class="part-num">${idx + 1}.</span>
-          <input type="text" inputmode="numeric" class="pW inp-size" placeholder="Урт" value="${p.w !== undefined ? p.w : ''}" oninput="onPartInputChanged()">
+          <input type="text" inputmode="numeric" class="pW inp-size" placeholder="Урт" value="${p.w || ''}" oninput="onPartInputChanged()">
           <span>х</span>
-          <input type="text" inputmode="numeric" class="pH inp-size" placeholder="Өргөн" value="${p.h !== undefined ? p.h : ''}" oninput="onPartInputChanged()">
+          <input type="text" inputmode="numeric" class="pH inp-size" placeholder="Өргөн" value="${p.h || ''}" oninput="onPartInputChanged()">
           <span>-></span>
           <input type="text" inputmode="numeric" class="pCount inp-count" placeholder="Тоо" value="${p.count !== undefined ? p.count : 1}" oninput="onPartInputChanged()">
           <span>ш</span>
@@ -386,7 +570,7 @@
             <label><input type="checkbox" class="eO2" ${p.eO2 !== false ? 'checked' : ''} onchange="onPartInputChanged()"> Ө2</label>
           </div>
 
-          <div class="cut-size-display" id="cutDisplay_${idx}">✂️ Зүсэх: ${p.w || 0}x${p.h || 0}</div>
+          <div class="cut-size-display" id="cutDisplay_${idx}">✂️ Зүсэх: ${p.w}x${p.h}</div>
           <button class="btn-remove-item" onclick="removePart(${idx})">✕</button>
         `;
         container.appendChild(div);
@@ -404,6 +588,37 @@
     function toggleDoorUI(idx, isChecked) {
       const doorAxisBox = document.getElementById(`doorAxisBox_${idx}`);
       if (doorAxisBox) doorAxisBox.style.display = isChecked ? 'flex' : 'none';
+      onPartInputChanged();
+    }
+
+    // Мастер (толгой) чекбокс дээр дарахад Эмжээр / Хаалга / Урт / Өргөн
+    // сонголтуудыг ИДЭВХТЭЙ байгаа бүх деталь дээр нэг зэрэг тохируулна.
+    function applyMasterToggle(field, checked) {
+      const fieldToClass = {
+        hasEdge: '.hasEdge',
+        isDoor: '.isDoor',
+        doorMinusW: '.doorMinusW',
+        doorMinusH: '.doorMinusH'
+      };
+      const selector = fieldToClass[field];
+      if (!selector) return;
+
+      const rows = document.querySelectorAll('.part-item');
+      rows.forEach((row, idx) => {
+        const cb = row.querySelector(selector);
+        if (!cb) return;
+        cb.checked = checked;
+
+        if (field === 'hasEdge') {
+          const edgeBox = document.getElementById(`edgeBox_${idx}`);
+          if (edgeBox) edgeBox.style.display = checked ? 'flex' : 'none';
+        }
+        if (field === 'isDoor') {
+          const doorAxisBox = document.getElementById(`doorAxisBox_${idx}`);
+          if (doorAxisBox) doorAxisBox.style.display = checked ? 'flex' : 'none';
+        }
+      });
+
       onPartInputChanged();
     }
 
@@ -458,7 +673,7 @@
       const newId = Date.now();
       sheetsData.push({
         id: newId, name: `Хавтан ${sheetsData.length + 1}`,
-        w: 2800, h: 1220, count: 5, kerf: 5, edge: 0, doorGap: 0, cutType: 'straight', parts: []
+        w: 2800, h: 1220, count: 5, kerf: 4, edge: 0, doorGap: 0, parts: []
       });
       activeTabId = newId;
       renderTabs();
@@ -484,7 +699,7 @@
       if (current) {
         if (!current.parts) current.parts = [];
         current.parts.push({ 
-          w: '', h: '', count: 1,
+          w: '', h: '', count: 1, 
           hasEdge: true, isDoor: false, doorMinusW: false, doorMinusH: false, 
           eU1: true, eU2: true, eO1: true, eO2: true 
         });
@@ -503,17 +718,20 @@
       }
     }
 
+    // Идэвхтэй хавтан дээрх БҮХ деталийг нэг товчлуураар устгах
     function deleteAllParts() {
-      if (confirm("Энэ хавтан дээрх бүх деталийг устгахдаа итгэлтэй байна уу?")) {
-        autoSave();
-        const current = sheetsData.find(s => s.id === activeTabId);
-        if (current) {
-          current.parts = [];
-          renderParts(current.parts);
-          autoSave();
-          clearResults();
-        }
+      const current = sheetsData.find(s => s.id === activeTabId);
+      if (!current || !current.parts || current.parts.length === 0) {
+        alert("Устгах деталь алга байна.");
+        return;
       }
+      if (!confirm(`"${current.name}" хавтангийн БҮХ (${current.parts.length}) деталийг устгахдаа итгэлтэй байна уу?`)) return;
+
+      current.parts = [];
+      renderParts(current.parts);
+      resetMasterToggles();
+      autoSave();
+      clearResults();
     }
 
     function importExcelFileForCurrentTab(e) {
@@ -536,7 +754,7 @@
               let count = parseInt(row[2]) || 1;
               if (!isNaN(w) && !isNaN(h) && w > 0 && h > 0) {
                 importedParts.push({ 
-                  w: w, h: h, count: count,
+                  w: w, h: h, count: count, 
                   hasEdge: true, isDoor: false, doorMinusW: false, doorMinusH: false, 
                   eU1: true, eU2: true, eO1: true, eO2: true 
                 });
@@ -575,9 +793,8 @@
       let sheetH = Math.min(currentSheet.w, currentSheet.h);
       let edge = currentSheet.edge || 0;
       let doorGap = currentSheet.doorGap || 0;
-      let kerf = currentSheet.kerf !== undefined ? currentSheet.kerf : 5;
+      let kerf = currentSheet.kerf || 4;
       let maxSheets = currentSheet.count;
-      let globalCutType = currentSheet.cutType || 'straight';
 
       let basePartsList = [];
       let partIdx = 1;
@@ -601,8 +818,7 @@
               w: cutW, 
               h: cutH, 
               area: cutW * cutH,
-              cutType: globalCutType,
-              label: `${partIdx}. ${cutW}x${cutH} [${globalCutType}]` 
+              label: `${partIdx}. ${cutW}x${cutH}` 
             });
           }
           partIdx++;
@@ -614,39 +830,11 @@
         return;
       }
 
-      basePartsList.sort((a, b) => (Math.max(b.w, b.h) - Math.max(a.w, a.h)) || (b.area - a.area));
-
-      let bins = [];
-      let unplaced = [];
-
-      basePartsList.forEach(p => {
-        let placed = false;
-
-        for (let b of bins) {
-          let node = b.insert(p.w, p.h);
-          if (node) {
-            node.label = p.label;
-            placed = true;
-            break;
-          }
-        }
-
-        if (!placed) {
-          if (bins.length < maxSheets) {
-            let newBin = new GuillotineBinPack(sheetW, sheetH, kerf);
-            let node = newBin.insert(p.w, p.h);
-            if (node) {
-              node.label = p.label;
-              bins.push(newBin);
-              placed = true;
-            } else {
-              unplaced.push(p);
-            }
-          } else {
-            unplaced.push(p);
-          }
-        }
-      });
+      // Хэд хэдэн эрэмбэлэлтийн стратегийг туршиж, хамгийн бага хаягдалтай
+      // (мөн хамгийн цөөн хавтан ашигласан) хувилбарыг сонгоно.
+      const best = packBestOfStrategies(basePartsList, sheetW, sheetH, kerf, maxSheets);
+      const bins = best.bins;
+      const unplaced = best.unplaced;
 
       bins.forEach((b, idx) => {
         renderSingleSheetCanvas(currentSheet.name, sheetW, sheetH, b.usedRectangles, idx + 1, bins.length);
@@ -667,14 +855,16 @@
         statusDiv.className = "status-msg status-error";
         let badgesHtml = unplaced.map(p => `<span class="unplaced-badge">⚠️ ${p.label}</span>`).join(" ");
         statusDiv.innerHTML = `
-          <div>⚠️ <b>АНХААР:</b> Зүсэлтийн горимоор нийт <b>${unplaced.length}</b> деталь багталгүй үлдлээ! (Хавтангийн тоог нэмнэ үү)</div>
-          <div>📊 Ашиглалт: <b>${effPercent}%</b> | Хаягдал: <b>${wastePercent}%</b></div>
+          <div>⚠️ <b>АНХААР:</b> Шулуун зүсэлтийн горимоор нийт <b>${unplaced.length}</b> деталь багталгүй үлдлээ! (Хавтангийн тоог нэмнэ үү)</div>
+          <div>📊 Шулуун ашиглалт: <b>${effPercent}%</b> | Хаягдал: <b>${wastePercent}%</b></div>
           <div style="margin-top:8px;"><b>Багтаагүй деталууд:</b></div>
           <div class="unplaced-box">${badgesHtml}</div>
+          <div class="strategy-note">Ашигласан эрэмбэлэлтийн стратеги: ${best.strategyName} (${bins.length + 1 <= maxSheets ? '5' : '5'} стратегийн хамгийн сайн үр дүн)</div>
         `;
       } else {
         statusDiv.className = "status-msg status-success";
-        statusDiv.innerHTML = `✂️ <b>ГУЙЛОТИН БҮРЭН ШУЛУУН ЗҮСЭЛТ АМЖИЛТТАЙ БОЛЛОО!</b> <br>Нийт ${basePartsList.length} деталь <b>${bins.length} хавтанд ШУЛУУН ДАЙРЧ ЗҮСЭХ БОЛОМЖТОЙГООР</b> багtлаа. <br>📊 Хавтангийн Ашиглалт: <b>${effPercent}%</b> | Хаягдал: <b>${wastePercent}%</b>`;
+        statusDiv.innerHTML = `✂️ <b>GUILLOTINE БҮРЭН ШУЛУУН ЗҮСЭЛТ АМЖИЛТТАЙ БОЛЛОО!</b> <br>Нийт ${basePartsList.length} деталь <b>${bins.length} хавтанд 100% ШУЛУУН ДАЙРЧ ЗҮСЭХ БОЛОМЖТОЙГООР</b> багтлаа. <br>📊 Хавтангийн Ашиглалт: <b>${effPercent}%</b> | Хаягдал (Wastage): <b>${wastePercent}%</b>
+        <div class="strategy-note">Хамгийн бага хаягдал өгсөн стратеги: ${best.strategyName} (5 өөр эрэмбэлэлтээс автоматаар сонгосон)</div>`;
       }
 
       document.getElementById('pdfBtn').style.display = "block";
@@ -695,7 +885,7 @@
       headerDiv.className = 'sheet-header-info';
       headerDiv.innerHTML = `
         <span>Хавтан ${sheetIndex} / ${totalSheets} - ${sheetName} (${sheetW} mm x ${sheetH} mm)</span>
-        <span>Деталь: ${placedParts.length} ш | Ашиглалт: <b>${effPct}%</b> (Хаягдал: <b>${wastePct}%</b>)</span>
+        <span>Деталь: ${placedParts.length} ш | Шулуун Ашиглалт: <b>${effPct}%</b> (Хаягдал: <b>${wastePct}%</b>)</span>
       `;
       wrapper.appendChild(headerDiv);
 
