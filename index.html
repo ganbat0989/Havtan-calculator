@@ -1,0 +1,249 @@
+class CuttingOptimizer {
+    constructor(sheetWidth, sheetHeight, kerf = 0) {
+        this.sheetWidth = sheetWidth;
+        this.sheetHeight = sheetHeight;
+        this.kerf = kerf; // Зүсэлтийн ирний зузаан (saw kerf)
+    }
+
+    /**
+     * @param {Array} partsList - [{id, width, height, quantity}, ...]
+     */
+    optimize(partsList) {
+        // 1. Тоо ширхгээр нь задлаад деталиудын массивыг үүсгэнэ
+        let parts = [];
+        let idCounter = 1;
+        partsList.forEach(p => {
+            for (let q = 0; q < (p.quantity || 1); q++) {
+                parts.push({
+                    id: p.id || `P${idCounter++}`,
+                    width: p.width,
+                    height: p.height,
+                    area: p.width * p.height
+                });
+            }
+        });
+
+        // 2. Том талбайтайгаас нь эхлээд эрэмбэлэх (Largest First Heuristic)
+        parts.sort((a, b) => b.area - a.area);
+
+        let sheets = [];
+        let remainingParts = [...parts];
+
+        // 3. Хавтан бүрээр нь байрлуулах үндсэн loop
+        while (remainingParts.length > 0) {
+            let sheet = {
+                width: this.sheetWidth,
+                height: this.sheetHeight,
+                freeRects: [{ x: 0, y: 0, width: this.sheetWidth, height: this.sheetHeight }],
+                placedParts: []
+            };
+
+            let stillRemaining = [];
+
+            for (let i = 0; i < remainingParts.length; i++) {
+                let part = remainingParts[i];
+                let placement = this.findBestPlacement(sheet.freeRects, part);
+
+                if (placement) {
+                    // Байрлалд амжилттай орсон бол placedParts рүү нэмэх
+                    sheet.placedParts.push({
+                        id: part.id,
+                        x: placement.rect.x,
+                        y: placement.rect.y,
+                        width: placement.width,
+                        height: placement.height,
+                        rotated: placement.rotated
+                    });
+
+                    // Хавтангийн үлдэгдэл сул зайнуудыг шинэчлэх (Guillotine Split)
+                    sheet.freeRects = this.splitFreeRectangles(
+                        sheet.freeRects, 
+                        placement.rect, 
+                        placement.width, 
+                        placement.height
+                    );
+                    
+                    // Санал болгосон 1 & 2: Сул зайг нэгтгэх (Merge) болон илүүдэл цэвэрлэх (Prune)
+                    sheet.freeRects = this.mergeFreeRectangles(sheet.freeRects);
+                    sheet.freeRects = this.pruneFreeRectangles(sheet.freeRects);
+                } else {
+                    stillRemaining.push(part);
+                }
+            }
+
+            sheets.push(sheet);
+            
+            // Хэрэв нэг ч деталь байрлаж чадахгүй гацвал гогцооноос гарах
+            if (stillRemaining.length === remainingParts.length) {
+                break; 
+            }
+            remainingParts = stillRemaining;
+        }
+
+        return {
+            totalSheets: sheets.length,
+            sheets: sheets,
+            unplaced: remainingParts
+        };
+    }
+
+    /**
+     * Санал болгосон 3: Multiple Heuristics (Best Area Fit + Short Side Fit)
+     */
+    findBestPlacement(freeRects, part) {
+        let bestScore = Infinity;
+        let bestPlacement = null;
+
+        const orientations = [
+            { w: part.width, h: part.height, rotated: false },
+            { w: part.height, h: part.width, rotated: true }
+        ];
+
+        for (let rect of freeRects) {
+            for (let ori of orientations) {
+                if (ori.w <= rect.width && ori.h <= rect.height) {
+                    let remW = rect.width - ori.w;
+                    let remH = rect.height - ori.h;
+
+                    // Score тооцоолох (MaxCut-тай дүйцэхүйц оновчлол)
+                    let areaFit = remW * remH;
+                    let shortSideFit = Math.min(remW, remH);
+                    let longSideFit = Math.max(remW, remH);
+
+                    let score = areaFit * 0.5 + shortSideFit * 0.3 + longSideFit * 0.2;
+
+                    if (score < bestScore) {
+                        bestScore = score;
+                        bestPlacement = {
+                            rect: rect,
+                            width: ori.w,
+                            height: ori.h,
+                            rotated: ori.rotated
+                        };
+                    }
+                }
+            }
+        }
+
+        return bestPlacement;
+    }
+
+    // Guillotine аргаар зайг хуваах
+    splitFreeRectangles(freeRects, usedRect, pW, pH) {
+        let newFreeRects = [];
+
+        for (let rect of freeRects) {
+            if (
+                usedRect.x < rect.x + rect.width &&
+                usedRect.x + pW > rect.x &&
+                usedRect.y < rect.y + rect.height &&
+                usedRect.y + pH > rect.y
+            ) {
+                if (usedRect.x > rect.x) {
+                    newFreeRects.push({ x: rect.x, y: rect.y, width: usedRect.x - rect.x, height: rect.height });
+                }
+                if (usedRect.x + pW < rect.x + rect.width) {
+                    newFreeRects.push({ x: usedRect.x + pW, y: rect.y, width: (rect.x + rect.width) - (usedRect.x + pW), height: rect.height });
+                }
+                if (usedRect.y > rect.y) {
+                    newFreeRects.push({ x: rect.x, y: rect.y, width: rect.width, height: usedRect.y - rect.y });
+                }
+                if (usedRect.y + pH < rect.y + rect.height) {
+                    newFreeRects.push({ x: rect.x, y: rect.y + pH, width: rect.width, height: (rect.y + rect.height) - (usedRect.y + pH) });
+                }
+            } else {
+                newFreeRects.push(rect);
+            }
+        }
+
+        return newFreeRects;
+    }
+
+    /**
+     * Санал болгосон 1: Free Rectangle Merge (Хил залгаа зайг хооронд нь нэгтгэх)
+     */
+    mergeFreeRectangles(rects) {
+        let merged = [...rects];
+        let change = true;
+
+        while (change) {
+            change = false;
+            for (let i = 0; i < merged.length; i++) {
+                for (let j = i + 1; j < merged.length; j++) {
+                    let r1 = merged[i];
+                    let r2 = merged[j];
+
+                    // Хэвтээгээр залгаа бол
+                    if (r1.y === r2.y && r1.height === r2.height) {
+                        if (r1.x + r1.width === r2.x) {
+                            r1.width += r2.width;
+                            merged.splice(j, 1);
+                            change = true;
+                            break;
+                        } else if (r2.x + r2.width === r1.x) {
+                            r2.width += r1.width;
+                            merged.splice(i, 1);
+                            change = true;
+                            break;
+                        }
+                    }
+                    // Босоогоор залгаа бол
+                    if (r1.x === r2.x && r1.width === r2.width) {
+                        if (r1.y + r1.height === r2.y) {
+                            r1.height += r2.height;
+                            merged.splice(j, 1);
+                            change = true;
+                            break;
+                        } else if (r2.y + r2.height === r1.y) {
+                            r2.height += r1.height;
+                            merged.splice(i, 1);
+                            change = true;
+                            break;
+                        }
+                    }
+                }
+                if (change) break;
+            }
+        }
+        return merged;
+    }
+
+    /**
+     * Санал болгосон 2: Free Rectangle Prune (Илүүдэл болон хэт жижиг зайг цэвэрлэх)
+     */
+    pruneFreeRectangles(rects) {
+        let pruned = [];
+        for (let i = 0; i < rects.length; i++) {
+            let r1 = rects[i];
+            let contained = false;
+
+            for (let j = 0; j < rects.length; j++) {
+                if (i === j) continue;
+                let r2 = rects[j];
+                if (
+                    r1.x >= r2.x &&
+                    r1.y >= r2.y &&
+                    r1.x + r1.width <= r2.x + r2.width &&
+                    r1.y + r1.height <= r2.y + r2.height
+                ) {
+                    contained = true;
+                    break;
+                }
+            }
+
+            // Хэт жижиг буюу ашиглах боломжгүй зайнуудыг хасна (< 5px)
+            if (!contained && r1.width > 5 && r1.height > 5) {
+                pruned.push(r1);
+            }
+        }
+        return pruned;
+    }
+}
+
+// --- ХЭРХЭН АШИГЛАХ ВЭ (Жишээ) ---
+// const optimizer = new CuttingOptimizer(2800, 2070); // 2800x2070 хэмжээтэй хавтан
+// const result = optimizer.optimize([
+//     { id: "Part 1", width: 600, height: 400, quantity: 10 },
+//     { id: "Part 2", width: 1200, height: 500, quantity: 5 }
+// ]);
+// console.log(result);
