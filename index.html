@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Хавтан Зүсэлт Тооцоолуур Pro v3.1</title>
+  <title>Хавтан Зүсэлт Тооцоолуур Pro v3.2</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
@@ -22,7 +22,7 @@
     
     .input-group { display: flex; gap: 6px; margin-bottom: 10px; align-items: center; flex-wrap: wrap; background: #fafafa; padding: 8px; border-radius: 8px; border: 1px solid #eee; }
     .part-num { font-weight: bold; width: 25px; text-align: right; color: #1a73e8; font-size: 13px; }
-    input[type="number"], input[type="text"] { padding: 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 13px; outline: none; }
+    input[type="text"] { padding: 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 13px; outline: none; }
     .inp-size { width: 75px; }
     .inp-count { width: 55px; }
 
@@ -64,7 +64,7 @@
 </head>
 <body>
 
-  <h2>✂️ Хавтан Өрөлтийн Тооцоолуур Pro <span style="font-size: 14px; color: #1a73e8; font-weight: normal;">v3.1</span></h2>
+  <h2>✂️ Хавтан Өрөлтийн Тооцоолуур Pro <span style="font-size: 14px; color: #1a73e8; font-weight: normal;">v3.2</span></h2>
 
   <!-- FREEZE / STICKY SECTION -->
   <div class="sticky-header-container">
@@ -82,29 +82,29 @@
         <div style="display:flex; gap:6px; margin-bottom:8px;">
           <div class="input-wrapper">
             <label>Урт (X):</label>
-            <input type="number" id="sheetW" placeholder="Урт (X)" oninput="autoSave()">
+            <input type="text" inputmode="numeric" id="sheetW" placeholder="Урт (X)" oninput="autoSave()">
           </div>
           <div class="input-wrapper">
             <label>Өргөн (Y):</label>
-            <input type="number" id="sheetH" placeholder="Өргөн (Y)" oninput="autoSave()">
+            <input type="text" inputmode="numeric" id="sheetH" placeholder="Өргөн (Y)" oninput="autoSave()">
           </div>
         </div>
         <div style="display:flex; gap:6px; margin-bottom:8px;">
           <div class="input-wrapper">
             <label>Хавтангийн тоо:</label>
-            <input type="number" id="sheetCount" placeholder="Тоо" oninput="autoSave()">
+            <input type="text" inputmode="numeric" id="sheetCount" placeholder="Тоо" oninput="autoSave()">
           </div>
           <div class="input-wrapper">
             <label>Ир (мм):</label>
-            <input type="number" id="kerf" placeholder="Ир (мм)" oninput="autoSave()">
+            <input type="text" inputmode="numeric" id="kerf" placeholder="Ир (мм)" oninput="autoSave()">
           </div>
           <div class="input-wrapper">
             <label>Эмжээр (мм):</label>
-            <input type="number" id="edgeVal" placeholder="Эмжээр (мм)" oninput="autoSaveAndRefresh()">
+            <input type="text" inputmode="numeric" id="edgeVal" placeholder="Эмжээр (мм)" oninput="autoSaveAndRefreshLive()">
           </div>
           <div class="input-wrapper">
             <label>Хаалга хоорондын зай (мм):</label>
-            <input type="number" id="doorGap" placeholder="Зай (мм)" oninput="autoSaveAndRefresh()">
+            <input type="text" inputmode="numeric" id="doorGap" placeholder="Зай (мм)" oninput="autoSaveAndRefreshLive()">
           </div>
         </div>
       </div>
@@ -144,9 +144,9 @@
     let activeTabId = null;
 
     function initData() {
-      const savedSheets = localStorage.getItem('cut_sheets_v3_1') || 
-                          localStorage.getItem('cut_sheets_v3_0') || 
-                          localStorage.getItem('cut_sheets_v2_9');
+      const savedSheets = localStorage.getItem('cut_sheets_v3_2') || 
+                          localStorage.getItem('cut_sheets_v3_1') || 
+                          localStorage.getItem('cut_sheets_v3_0');
 
       if (savedSheets) {
         try {
@@ -177,17 +177,17 @@
     }
 
     function autoSave() {
-      saveCurrentTabFields();
-      localStorage.setItem('cut_sheets_v3_1', JSON.stringify(sheetsData));
+      saveCurrentTabFieldsStateOnly();
+      localStorage.setItem('cut_sheets_v3_2', JSON.stringify(sheetsData));
     }
 
-    function autoSaveAndRefresh() {
+    function autoSaveAndRefreshLive() {
       autoSave();
       const current = sheetsData.find(s => s.id === activeTabId);
-      if(current) renderParts(current.parts);
+      if(current) updateCutDisplayLabelsOnly();
     }
 
-    function saveCurrentTabFields() {
+    function saveCurrentTabFieldsStateOnly() {
       const current = sheetsData.find(s => s.id === activeTabId);
       if (current) {
         current.name = document.getElementById('sheetName').value;
@@ -198,34 +198,23 @@
         current.edge = parseFloat(document.getElementById('edgeVal').value) || 0;
         current.doorGap = parseFloat(document.getElementById('doorGap').value) || 0;
 
-        const pWs = document.querySelectorAll('.pW');
-        const pHs = document.querySelectorAll('.pH');
-        const pCounts = document.querySelectorAll('.pCount');
-        const eU1s = document.querySelectorAll('.eU1');
-        const eU2s = document.querySelectorAll('.eU2');
-        const eO1s = document.querySelectorAll('.eO1');
-        const eO2s = document.querySelectorAll('.eO2');
-        const hasEdges = document.querySelectorAll('.hasEdge');
-        const isDoors = document.querySelectorAll('.isDoor');
-        const doorMinusW = document.querySelectorAll('.doorMinusW');
-        const doorMinusH = document.querySelectorAll('.doorMinusH');
-
+        const partRows = document.querySelectorAll('.part-item');
         current.parts = [];
-        for (let i = 0; i < pWs.length; i++) {
+        partRows.forEach(row => {
           current.parts.push({
-            w: parseFloat(pWs[i].value) || 0,
-            h: parseFloat(pHs[i].value) || 0,
-            count: parseInt(pCounts[i].value) || 1,
-            hasEdge: hasEdges[i] ? hasEdges[i].checked : true,
-            isDoor: isDoors[i] ? isDoors[i].checked : false,
-            doorMinusW: doorMinusW[i] ? doorMinusW[i].checked : true,
-            doorMinusH: doorMinusH[i] ? doorMinusH[i].checked : true,
-            eU1: eU1s[i] ? eU1s[i].checked : false,
-            eU2: eU2s[i] ? eU2s[i].checked : false,
-            eO1: eO1s[i] ? eO1s[i].checked : false,
-            eO2: eO2s[i] ? eO2s[i].checked : false
+            w: parseFloat(row.querySelector('.pW').value) || 0,
+            h: parseFloat(row.querySelector('.pH').value) || 0,
+            count: parseInt(row.querySelector('.pCount').value) || 1,
+            hasEdge: row.querySelector('.hasEdge').checked,
+            isDoor: row.querySelector('.isDoor').checked,
+            doorMinusW: row.querySelector('.doorMinusW').checked,
+            doorMinusH: row.querySelector('.doorMinusH').checked,
+            eU1: row.querySelector('.eU1').checked,
+            eU2: row.querySelector('.eU2').checked,
+            eO1: row.querySelector('.eO1').checked,
+            eO2: row.querySelector('.eO2').checked
           });
-        }
+        });
         updateBadges(current.parts);
       }
     }
@@ -292,8 +281,6 @@
     function renderParts(parts) {
       const container = document.getElementById('parts-list');
       container.innerHTML = "";
-      const edgeThickness = parseFloat(document.getElementById('edgeVal').value) || 0;
-      const doorGapVal = parseFloat(document.getElementById('doorGap').value) || 0;
 
       parts.forEach((p, idx) => {
         if (p.hasEdge === undefined) p.hasEdge = true;
@@ -301,30 +288,15 @@
         if (p.doorMinusW === undefined) p.doorMinusW = true;
         if (p.doorMinusH === undefined) p.doorMinusH = true;
 
-        let cutW = p.w;
-        let cutH = p.h;
-
-        // Эмжээр хасах
-        if (p.hasEdge) {
-          cutW -= ((p.eO1 ? edgeThickness : 0) + (p.eO2 ? edgeThickness : 0));
-          cutH -= ((p.eU1 ? edgeThickness : 0) + (p.eU2 ? edgeThickness : 0));
-        }
-
-        // Хаалганы зай хасах (сонгосон тэнхлэгээр)
-        if (p.isDoor && doorGapVal > 0) {
-          if (p.doorMinusW) cutW -= doorGapVal;
-          if (p.doorMinusH) cutH -= doorGapVal;
-        }
-
         const div = document.createElement('div');
         div.className = 'input-group part-item';
         div.innerHTML = `
           <span class="part-num">${idx + 1}.</span>
-          <input type="number" class="pW inp-size" placeholder="Бэлэн Урт" value="${p.w}" oninput="updateItemAndSave()">
+          <input type="text" inputmode="numeric" class="pW inp-size" placeholder="Бэлэн Урт" value="${p.w}" oninput="onPartInputChanged()">
           <span>х</span>
-          <input type="number" class="pH inp-size" placeholder="Бэлэн Өргөн" value="${p.h}" oninput="updateItemAndSave()">
+          <input type="text" inputmode="numeric" class="pH inp-size" placeholder="Бэлэн Өргөн" value="${p.h}" oninput="onPartInputChanged()">
           <span>-></span>
-          <input type="number" class="pCount inp-count" placeholder="Тоо" value="${p.count}" oninput="updateItemAndSave()">
+          <input type="text" inputmode="numeric" class="pCount inp-count" placeholder="Тоо" value="${p.count}" oninput="onPartInputChanged()">
           <span>ш</span>
 
           <div class="extra-selectors">
@@ -334,26 +306,26 @@
 
           <div class="door-axis-selectors" id="doorAxisBox_${idx}" style="display: ${p.isDoor ? 'flex' : 'none'};">
             <span>Зай хасах:</span>
-            <label><input type="checkbox" class="doorMinusW" ${p.doorMinusW ? 'checked' : ''} onchange="updateItemAndSave()"> Урт</label>
-            <label><input type="checkbox" class="doorMinusH" ${p.doorMinusH ? 'checked' : ''} onchange="updateItemAndSave()"> Өргөн</label>
+            <label><input type="checkbox" class="doorMinusW" ${p.doorMinusW ? 'checked' : ''} onchange="onPartInputChanged()"> Урт</label>
+            <label><input type="checkbox" class="doorMinusH" ${p.doorMinusH ? 'checked' : ''} onchange="onPartInputChanged()"> Өргөн</label>
           </div>
 
           <div class="edge-selectors" id="edgeBox_${idx}" style="display: ${p.hasEdge ? 'flex' : 'none'};">
             <span>Ирмэг:</span>
-            <label><input type="checkbox" class="eU1" ${p.eU1 ? 'checked' : ''} onchange="updateItemAndSave()"> У1</label>
-            <label><input type="checkbox" class="eU2" ${p.eU2 ? 'checked' : ''} onchange="updateItemAndSave()"> У2</label>
-            <label><input type="checkbox" class="eO1" ${p.eO1 ? 'checked' : ''} onchange="updateItemAndSave()"> Ө1</label>
-            <label><input type="checkbox" class="eO2" ${p.eO2 ? 'checked' : ''} onchange="updateItemAndSave()"> Ө2</label>
+            <label><input type="checkbox" class="eU1" ${p.eU1 ? 'checked' : ''} onchange="onPartInputChanged()"> У1</label>
+            <label><input type="checkbox" class="eU2" ${p.eU2 ? 'checked' : ''} onchange="onPartInputChanged()"> У2</label>
+            <label><input type="checkbox" class="eO1" ${p.eO1 ? 'checked' : ''} onchange="onPartInputChanged()"> Ө1</label>
+            <label><input type="checkbox" class="eO2" ${p.eO2 ? 'checked' : ''} onchange="onPartInputChanged()"> Ө2</label>
           </div>
 
-          <div class="cut-size-display">✂️ Зүсэх: ${cutW}x${cutH}</div>
+          <div class="cut-size-display" id="cutDisplay_${idx}">✂️ Зүсэх: 0x0</div>
 
           <button class="btn-remove-item" onclick="removePart(${idx})">✕</button>
         `;
         container.appendChild(div);
       });
 
-      updateBadges(parts);
+      updateCutDisplayLabelsOnly();
     }
 
     function toggleEdgeUI(idx, isChecked) {
@@ -361,7 +333,7 @@
       if (edgeBox) {
         edgeBox.style.display = isChecked ? 'flex' : 'none';
       }
-      updateItemAndSave();
+      onPartInputChanged();
     }
 
     function toggleDoorUI(idx, isChecked) {
@@ -369,13 +341,57 @@
       if (doorAxisBox) {
         doorAxisBox.style.display = isChecked ? 'flex' : 'none';
       }
-      updateItemAndSave();
+      onPartInputChanged();
     }
 
-    function updateItemAndSave() {
+    function onPartInputChanged() {
       autoSave();
-      const current = sheetsData.find(s => s.id === activeTabId);
-      if(current) renderParts(current.parts);
+      updateCutDisplayLabelsOnly();
+    }
+
+    function updateCutDisplayLabelsOnly() {
+      const edgeThickness = parseFloat(document.getElementById('edgeVal').value) || 0;
+      const doorGapVal = parseFloat(document.getElementById('doorGap').value) || 0;
+      
+      const partRows = document.querySelectorAll('.part-item');
+      let partsTemp = [];
+
+      partRows.forEach((row, idx) => {
+        let w = parseFloat(row.querySelector('.pW').value) || 0;
+        let h = parseFloat(row.querySelector('.pH').value) || 0;
+        let count = parseInt(row.querySelector('.pCount').value) || 1;
+        let hasEdge = row.querySelector('.hasEdge').checked;
+        let isDoor = row.querySelector('.isDoor').checked;
+        let doorMinusW = row.querySelector('.doorMinusW').checked;
+        let doorMinusH = row.querySelector('.doorMinusH').checked;
+        
+        let eU1 = row.querySelector('.eU1').checked;
+        let eU2 = row.querySelector('.eU2').checked;
+        let eO1 = row.querySelector('.eO1').checked;
+        let eO2 = row.querySelector('.eO2').checked;
+
+        let cutW = w;
+        let cutH = h;
+
+        if (hasEdge) {
+          cutW -= ((eO1 ? edgeThickness : 0) + (eO2 ? edgeThickness : 0));
+          cutH -= ((eU1 ? edgeThickness : 0) + (eU2 ? edgeThickness : 0));
+        }
+
+        if (isDoor && doorGapVal > 0) {
+          if (doorMinusW) cutW -= doorGapVal;
+          if (doorMinusH) cutH -= doorGapVal;
+        }
+
+        const displayEl = document.getElementById(`cutDisplay_${idx}`);
+        if(displayEl) {
+          displayEl.innerText = `✂️ Зүсэх: ${cutW}x${cutH}`;
+        }
+
+        partsTemp.push({ count: count });
+      });
+
+      updateBadges(partsTemp);
     }
 
     function addNewTab() {
