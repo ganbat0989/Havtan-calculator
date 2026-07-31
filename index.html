@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Хавтан Зүсэлт Тооцоолуур Pro v3.4</title>
+  <title>Хавтан Зүсэлт Тооцоолуур Pro v3.5</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
@@ -64,7 +64,7 @@
 </head>
 <body>
 
-  <h2>✂️ Хавтан Өрөлтийн Тооцоолуур Pro <span style="font-size: 14px; color: #1a73e8; font-weight: normal;">v3.4</span></h2>
+  <h2>✂️ Хавтан Өрөлтийн Тооцоолуур Pro <span style="font-size: 14px; color: #1a73e8; font-weight: normal;">v3.5 Ухаалаг Шахмал</span></h2>
 
   <div class="sticky-header-container">
     <div class="card" style="margin-bottom: 0;">
@@ -126,7 +126,7 @@
     <button class="btn-add" onclick="addPartInput()">+ Шинэ деталь нэмэх</button>
   </div>
 
-  <button class="main-btn" onclick="calculateNesting()">🧮 MaxCut Өрөлт Хийх</button>
+  <button class="main-btn" onclick="calculateNesting()">🧮 Ухаалаг MaxCut Өрөлт Хийх</button>
 
   <div class="card canvas-container" style="margin-top: 20px;">
     <h3 id="result-header-title">3. Зүсэлтийн зураглал</h3>
@@ -142,9 +142,9 @@
     let activeTabId = null;
 
     function initData() {
-      const savedSheets = localStorage.getItem('cut_sheets_v3_4') || 
-                          localStorage.getItem('cut_sheets_v3_3') || 
-                          localStorage.getItem('cut_sheets_v3_2');
+      const savedSheets = localStorage.getItem('cut_sheets_v3_5') || 
+                          localStorage.getItem('cut_sheets_v3_4') || 
+                          localStorage.getItem('cut_sheets_v3_3');
 
       if (savedSheets) {
         try {
@@ -176,7 +176,7 @@
 
     function autoSave() {
       saveCurrentTabFieldsStateOnly();
-      localStorage.setItem('cut_sheets_v3_4', JSON.stringify(sheetsData));
+      localStorage.setItem('cut_sheets_v3_5', JSON.stringify(sheetsData));
     }
 
     function autoSaveAndRefreshLive() {
@@ -534,18 +534,19 @@
       let bestResult = null;
       let minUnplacedCount = Infinity;
 
-      // Advanced multi-heuristic sorting combinations to find the exact tight pack
+      // Ultra-deep heuristic combinations to completely eliminate unplaced parts without resizing
       let sortRules = [
-        (a, b) => (Math.max(b.w, b.h) - Math.max(a.w, a.h)) || (b.w * b.h - a.w * a.h),
         (a, b) => (b.w * b.h - a.w * a.h) || (Math.max(b.w, b.h) - Math.max(a.w, a.h)),
+        (a, b) => (Math.max(b.w, b.h) - Math.max(a.w, a.h)) || (b.w * b.h - a.w * a.h),
         (a, b) => (b.w - a.w) || (b.h - a.h),
         (a, b) => (b.h - a.h) || (b.w - a.w),
         (a, b) => (b.w + b.h) - (a.w + a.h),
-        (a, b) => (Math.min(b.w, b.h) - Math.min(a.w, a.h))
+        (a, b) => (Math.min(b.w, b.h) - Math.min(a.w, a.h)),
+        (a, b) => (a.w * a.h - b.w * b.h) // Reverse sort to test small-first packing in leftover gaps
       ];
 
       let fitModes = ['area', 'short', 'long'];
-      let splitHeuristics = ['w_first', 'h_first', 'smart'];
+      let splitHeuristics = ['smart', 'w_first', 'h_first'];
 
       for (let sortFn of sortRules) {
         for (let fitMode of fitModes) {
@@ -643,7 +644,6 @@
             let wRemain = node.w - pw - kerf;
             let hRemain = node.h - ph - kerf;
 
-            // Advanced Guillotine split direction heuristic to maximize consecutive small cuts
             let splitHorizFirst = false;
             if (splitHeuristic === 'w_first') splitHorizFirst = true;
             else if (splitHeuristic === 'h_first') splitHorizFirst = false;
