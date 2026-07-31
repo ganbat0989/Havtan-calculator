@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MaxCut v10.2 GUILLOTINE ENGINE</title>
+  <title>MaxCut v10.3 GUILLOTINE ENGINE</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
@@ -65,7 +65,7 @@
 </head>
 <body>
 
-  <h2>✂️ MaxCut v10.2 GUILLOTINE ENGINE</h2>
+  <h2>✂️ MaxCut v10.3 GUILLOTINE ENGINE</h2>
 
   <div class="sticky-header-container">
     <div class="card" style="margin-bottom: 0;">
@@ -218,7 +218,7 @@
       }
     }
 
-    const agtDefaultParts = [
+    const defaultInitialParts = [
       { w: 2775, h: 700, count: 1, hasEdge: true, isDoor: false, doorMinusW: false, doorMinusH: false, eU1: true, eU2: true, eO1: true, eO2: true },
       { w: 2775, h: 350, count: 1, hasEdge: true, isDoor: false, doorMinusW: false, doorMinusH: false, eU1: true, eU2: true, eO1: true, eO2: true },
       { w: 346, h: 595, count: 2, hasEdge: true, isDoor: false, doorMinusW: false, doorMinusH: false, eU1: true, eU2: true, eO1: true, eO2: true }
@@ -228,8 +228,7 @@
     let activeTabId = null;
 
     function initData() {
-      // Өмнөх хувилбарын түлхүүрүүд болон шинэ түлхүүрээс датаг шалгаж унших
-      const savedSheets = localStorage.getItem('cut_sheets_v10_2') || localStorage.getItem('cut_sheets_v10_1');
+      const savedSheets = localStorage.getItem('cut_sheets_v10_3') || localStorage.getItem('cut_sheets_v10_2') || localStorage.getItem('cut_sheets_v10_1');
       if (savedSheets) {
         try { sheetsData = JSON.parse(savedSheets); } catch(e) { sheetsData = null; }
       } 
@@ -240,7 +239,7 @@
             name: "AGT Зүсвэр (2800х1220)", 
             cutType: "straight",
             w: 2800, h: 1220, count: 5, kerf: 4, edge: 0, doorGap: 0,
-            parts: JSON.parse(JSON.stringify(agtDefaultParts))
+            parts: JSON.parse(JSON.stringify(defaultInitialParts))
           }
         ];
       }
@@ -250,7 +249,7 @@
 
     function autoSave() {
       saveCurrentTabFieldsStateOnly();
-      localStorage.setItem('cut_sheets_v10_2', JSON.stringify(sheetsData));
+      localStorage.setItem('cut_sheets_v10_3', JSON.stringify(sheetsData));
     }
 
     function autoSaveAndRefreshLive() {
@@ -358,9 +357,9 @@
         div.className = 'input-group part-item';
         div.innerHTML = `
           <span class="part-num">${idx + 1}.</span>
-          <input type="text" inputmode="numeric" class="pW inp-size" placeholder="Урт" value="${p.w || ''}" oninput="onPartInputChanged()">
+          <input type="text" inputmode="numeric" class="pW inp-size" placeholder="Урт" value="${p.w !== undefined ? p.w : ''}" oninput="onPartInputChanged()">
           <span>х</span>
-          <input type="text" inputmode="numeric" class="pH inp-size" placeholder="Өргөн" value="${p.h || ''}" oninput="onPartInputChanged()">
+          <input type="text" inputmode="numeric" class="pH inp-size" placeholder="Өргөн" value="${p.h !== undefined ? p.h : ''}" oninput="onPartInputChanged()">
           <span>-></span>
           <input type="text" inputmode="numeric" class="pCount inp-count" placeholder="Тоо" value="${p.count !== undefined ? p.count : 1}" oninput="onPartInputChanged()">
           <span>ш</span>
@@ -382,7 +381,7 @@
             <label><input type="checkbox" class="eO2" ${p.eO2 !== false ? 'checked' : ''} onchange="onPartInputChanged()"> Ө2</label>
           </div>
 
-          <div class="cut-size-display" id="cutDisplay_${idx}">✂️ Зүсэх: ${p.w}x${p.h}</div>
+          <div class="cut-size-display" id="cutDisplay_${idx}">✂️ Зүсэх: ${p.w || 0}x${p.h || 0}</div>
           <button class="btn-remove-item" onclick="removePart(${idx})">✕</button>
         `;
         container.appendChild(div);
