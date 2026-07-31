@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MaxCut Ultra Engine v7.0 - Хамгийн бага хорогдол</title>
+  <title>MaxCut v8.0 MAXRECTS ENGINE - 2800x1220 (5 Sheet Optimized)</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-    body { padding: 15px; background: #f4f6f9; margin: 0; color: #333; }
-    h2 { color: #1a73e8; text-align: center; margin-top: 5px; margin-bottom: 15px; font-size: 20px; }
+    body { padding: 15px; background: #f0f2f5; margin: 0; color: #1c1e21; }
+    h2 { color: #1a73e8; text-align: center; margin-top: 5px; margin-bottom: 15px; font-size: 22px; }
     
-    .sticky-header-container { position: sticky; top: 0; z-index: 999; background: #f4f6f9; padding-top: 5px; padding-bottom: 5px; }
-    .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 15px; }
+    .sticky-header-container { position: sticky; top: 0; z-index: 999; background: #f0f2f5; padding-top: 5px; padding-bottom: 5px; }
+    .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); margin-bottom: 15px; }
     .summary-badge { display: flex; gap: 10px; margin-bottom: 10px; }
     .badge { flex: 1; background: #e8f0fe; color: #1a73e8; padding: 10px; border-radius: 8px; text-align: center; font-weight: bold; font-size: 13px; }
 
@@ -20,14 +20,14 @@
     .tab-btn.active { background: #1a73e8; color: white; }
     .tab-add-btn { background: #34a853; color: white; border: none; border-radius: 8px; padding: 8px 12px; cursor: pointer; font-weight: bold; font-size: 13px; }
     
-    .input-group { display: flex; gap: 6px; margin-bottom: 10px; align-items: center; flex-wrap: wrap; background: #fafafa; padding: 8px; border-radius: 8px; border: 1px solid #eee; }
-    .part-num { font-weight: bold; width: 25px; text-align: right; color: #1a73e8; font-size: 13px; }
+    .input-group { display: flex; gap: 6px; margin-bottom: 8px; align-items: center; flex-wrap: wrap; background: #fafafa; padding: 8px; border-radius: 8px; border: 1px solid #eee; }
+    .part-num { font-weight: bold; width: 30px; text-align: right; color: #1a73e8; font-size: 13px; }
     input[type="text"] { padding: 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 13px; outline: none; }
     .inp-size { width: 75px; }
     .inp-count { width: 55px; }
 
     .input-wrapper { position: relative; flex: 1; display: flex; flex-direction: column; }
-    .input-wrapper label { font-size: 10px; font-weight: bold; color: #666; margin-bottom: 2px; }
+    .input-wrapper label { font-size: 11px; font-weight: bold; color: #555; margin-bottom: 3px; }
 
     .edge-selectors, .extra-selectors, .door-axis-selectors { display: flex; gap: 6px; align-items: center; background: #eef3fc; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; color: #1a73e8; }
     .edge-selectors label, .extra-selectors label, .door-axis-selectors label { display: flex; align-items: center; cursor: pointer; gap: 2px; }
@@ -35,9 +35,10 @@
     .cut-size-display { font-size: 12px; font-weight: bold; color: #d93025; background: #fce8e6; padding: 6px 10px; border-radius: 6px; white-space: nowrap; }
 
     .parts-header-actions { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f0f2f5; padding-bottom: 8px; margin-bottom: 12px; }
-    .btn-excel-tab { background: #107c41; color: white; border: none; border-radius: 6px; padding: 6px 12px; font-weight: bold; font-size: 12px; cursor: pointer; }
+    .btn-excel-tab { background: #107c41; color: white; border: none; border-radius: 6px; padding: 8px 14px; font-weight: bold; font-size: 13px; cursor: pointer; }
 
-    button.main-btn { width: 100%; padding: 14px; background: #1a73e8; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; font-weight: bold; }
+    button.main-btn { width: 100%; padding: 15px; background: #1a73e8; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+    button.main-btn:hover { background: #1557b0; }
     .btn-pdf { background: #ea4335; color: white; border: none; border-radius: 8px; width: 100%; padding: 12px; font-size: 15px; font-weight: bold; cursor: pointer; margin-bottom: 15px; display: none; }
     .btn-add { background: #34a853; color: white; border: none; border-radius: 6px; width: 100%; margin-top: 5px; padding: 10px; font-size: 14px; font-weight: bold; cursor: pointer; }
     .btn-delete { background: #d93025; color: white; border: none; border-radius: 6px; padding: 6px 10px; cursor: pointer; font-weight: bold; font-size: 12px; }
@@ -48,7 +49,7 @@
     .sheet-header-info { display: flex; justify-content: space-between; font-weight: bold; font-size: 13px; color: #1a73e8; margin-bottom: 10px; border-bottom: 2px solid #e8f0fe; padding-bottom: 5px; }
     canvas { border: 2px solid #333; background: #f8f9fa; border-radius: 4px; max-width: 100%; }
     
-    .status-msg { font-weight: bold; margin-bottom: 15px; padding: 12px; border-radius: 6px; font-size: 14px; text-align: left; }
+    .status-msg { font-weight: bold; margin-bottom: 15px; padding: 14px; border-radius: 8px; font-size: 14px; text-align: left; line-height: 1.5; }
     .status-success { background: #e6f4ea; color: #137333; border: 1px solid #34a853; }
     .status-error { background: #fce8e6; color: #c5221f; border: 1px solid #ea4335; }
     .unplaced-box { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
@@ -64,7 +65,7 @@
 </head>
 <body>
 
-  <h2>🔥 MaxCut Ultra Engine v7.0 (Хамгийн Бага Хорогдол)</h2>
+  <h2>🔥 MaxCut v8.0 MAXRECTS ENGINE (2800x1220 - 5 Хавтан Төгс Өрөлт)</h2>
 
   <div class="sticky-header-container">
     <div class="card" style="margin-bottom: 0;">
@@ -80,30 +81,30 @@
         </div>
         <div style="display:flex; gap:6px; margin-bottom:8px;">
           <div class="input-wrapper">
-            <label>Урт (X):</label>
-            <input type="text" inputmode="numeric" id="sheetW" placeholder="Урт (X)" oninput="autoSave()">
+            <label>Урт (X - мм):</label>
+            <input type="text" inputmode="numeric" id="sheetW" value="2800" oninput="autoSave()">
           </div>
           <div class="input-wrapper">
-            <label>Өргөн (Y):</label>
-            <input type="text" inputmode="numeric" id="sheetH" placeholder="Өргөн (Y)" oninput="autoSave()">
+            <label>Өргөн (Y - мм):</label>
+            <input type="text" inputmode="numeric" id="sheetH" value="1220" oninput="autoSave()">
           </div>
         </div>
         <div style="display:flex; gap:6px; margin-bottom:8px;">
           <div class="input-wrapper">
             <label>Хавтангийн тоо:</label>
-            <input type="text" inputmode="numeric" id="sheetCount" placeholder="Тоо" oninput="autoSave()">
+            <input type="text" inputmode="numeric" id="sheetCount" value="5" oninput="autoSave()">
           </div>
           <div class="input-wrapper">
             <label>Ир (мм):</label>
-            <input type="text" inputmode="numeric" id="kerf" placeholder="Ир (мм)" oninput="autoSave()">
+            <input type="text" inputmode="numeric" id="kerf" value="4" oninput="autoSave()">
           </div>
           <div class="input-wrapper">
             <label>Эмжээр (мм):</label>
-            <input type="text" inputmode="numeric" id="edgeVal" placeholder="Эмжээр (мм)" oninput="autoSaveAndRefreshLive()">
+            <input type="text" inputmode="numeric" id="edgeVal" value="0" oninput="autoSaveAndRefreshLive()">
           </div>
           <div class="input-wrapper">
-            <label>Хаалга хоорондын зай (мм):</label>
-            <input type="text" inputmode="numeric" id="doorGap" placeholder="Зай (мм)" oninput="autoSaveAndRefreshLive()">
+            <label>Зай (мм):</label>
+            <input type="text" inputmode="numeric" id="doorGap" value="0" oninput="autoSaveAndRefreshLive()">
           </div>
         </div>
       </div>
@@ -117,8 +118,8 @@
 
   <div class="card" style="margin-top: 15px;">
     <div class="parts-header-actions">
-      <h3 id="parts-header-title">2. Зүсэх деталь хэсгүүд</h3>
-      <button class="btn-excel-tab" onclick="document.getElementById('excelFileInput').click()">📊 Excel оруулж ирэх</button>
+      <h3 id="parts-header-title">2. Зүсэх деталь хэсгүүд (AGT Зүсвэр)</h3>
+      <button class="btn-excel-tab" onclick="document.getElementById('excelFileInput').click()">📊 Өөр Excel файл оруулж ирэх</button>
       <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" style="display:none;" onchange="importExcelFileForCurrentTab(event)">
     </div>
 
@@ -126,7 +127,7 @@
     <button class="btn-add" onclick="addPartInput()">+ Шинэ деталь нэмэх</button>
   </div>
 
-  <button class="main-btn" onclick="calculateNesting()">⚡ ТӨГС ӨРӨЛТ ТООЦООЛОХ (ULTRA OPTIMIZE)</button>
+  <button class="main-btn" onclick="calculateNesting()">⚡ MAXRECTS ТӨГС ӨРӨЛТ ТООЦООЛОХ (5 ХАВТАНД БАГТААХ)</button>
 
   <div class="card canvas-container" style="margin-top: 20px;">
     <h3 id="result-header-title">3. Зүсэлтийн зураглал</h3>
@@ -138,11 +139,52 @@
   </div>
 
   <script>
+    // Initial dataset pre-loaded directly from AGT зүсвэр.xlsx
+    const agtDefaultParts = [
+      { w: 2775, h: 700, count: 1 },
+      { w: 2775, h: 350, count: 1 },
+      { w: 742, h: 58, count: 1 },
+      { w: 1076, h: 58, count: 1 },
+      { w: 948, h: 55, count: 1 },
+      { w: 700, h: 55, count: 1 },
+      { w: 1917, h: 55, count: 1 },
+      { w: 2775, h: 800, count: 1 },
+      { w: 346, h: 595, count: 2 },
+      { w: 393, h: 345, count: 1 },
+      { w: 318, h: 398, count: 1 },
+      { w: 300, h: 782, count: 1 },
+      { w: 2720, h: 600, count: 1 },
+      { w: 500, h: 1081, count: 2 },
+      { w: 592, h: 398, count: 1 },
+      { w: 742, h: 76, count: 1 },
+      { w: 1076, h: 76, count: 1 },
+      { w: 612, h: 55, count: 1 },
+      { w: 727, h: 595, count: 1 },
+      { w: 727, h: 275, count: 1 },
+      { w: 727, h: 401, count: 1 },
+      { w: 762, h: 680, count: 1 },
+      { w: 500, h: 746, count: 1 },
+      { w: 393, h: 446, count: 3 },
+      { w: 445, h: 329, count: 1 },
+      { w: 445, h: 445, count: 1 },
+      { w: 445, h: 386, count: 1 },
+      { w: 393, h: 345, count: 1 },
+      { w: 500, h: 746, count: 1 },
+      { w: 865, h: 460, count: 2 },
+      { w: 393, h: 446, count: 1 },
+      { w: 445, h: 329, count: 1 },
+      { w: 727, h: 275, count: 1 },
+      { w: 727, h: 195, count: 1 },
+      { w: 862, h: 100, count: 1 },
+      { w: 762, h: 100, count: 1 },
+      { w: 1887, h: 55, count: 1 }
+    ];
+
     let sheetsData = [];
     let activeTabId = null;
 
     function initData() {
-      const savedSheets = localStorage.getItem('cut_sheets_v7_0') || localStorage.getItem('cut_sheets_v6_0');
+      const savedSheets = localStorage.getItem('cut_sheets_v8_0');
 
       if (savedSheets) {
         try {
@@ -156,14 +198,14 @@
         sheetsData = [
           { 
             id: 1, 
-            name: "dotor box complect", 
-            w: 2745, 
-            h: 1830, 
-            count: 6, 
+            name: "AGT Зүсвэр (2800х1220)", 
+            w: 2800, 
+            h: 1220, 
+            count: 5, 
             kerf: 4,
-            edge: 0.8,
-            doorGap: 2,
-            parts: []
+            edge: 0,
+            doorGap: 0,
+            parts: JSON.parse(JSON.stringify(agtDefaultParts))
           }
         ];
       }
@@ -174,7 +216,7 @@
 
     function autoSave() {
       saveCurrentTabFieldsStateOnly();
-      localStorage.setItem('cut_sheets_v7_0', JSON.stringify(sheetsData));
+      localStorage.setItem('cut_sheets_v8_0', JSON.stringify(sheetsData));
     }
 
     function autoSaveAndRefreshLive() {
@@ -201,14 +243,14 @@
             w: parseFloat(row.querySelector('.pW').value) || 0,
             h: parseFloat(row.querySelector('.pH').value) || 0,
             count: parseInt(row.querySelector('.pCount').value) || 1,
-            hasEdge: row.querySelector('.hasEdge').checked,
-            isDoor: row.querySelector('.isDoor').checked,
-            doorMinusW: row.querySelector('.doorMinusW').checked,
-            doorMinusH: row.querySelector('.doorMinusH').checked,
-            eU1: row.querySelector('.eU1').checked,
-            eU2: row.querySelector('.eU2').checked,
-            eO1: row.querySelector('.eO1').checked,
-            eO2: row.querySelector('.eO2').checked
+            hasEdge: row.querySelector('.hasEdge') ? row.querySelector('.hasEdge').checked : false,
+            isDoor: row.querySelector('.isDoor') ? row.querySelector('.isDoor').checked : false,
+            doorMinusW: row.querySelector('.doorMinusW') ? row.querySelector('.doorMinusW').checked : false,
+            doorMinusH: row.querySelector('.doorMinusH') ? row.querySelector('.doorMinusH').checked : false,
+            eU1: row.querySelector('.eU1') ? row.querySelector('.eU1').checked : false,
+            eU2: row.querySelector('.eU2') ? row.querySelector('.eU2').checked : false,
+            eO1: row.querySelector('.eO1') ? row.querySelector('.eO1').checked : false,
+            eO2: row.querySelector('.eO2') ? row.querySelector('.eO2').checked : false
           });
         });
         updateBadges(current.parts);
@@ -264,8 +306,8 @@
         document.getElementById('sheetH').value = current.h;
         document.getElementById('sheetCount').value = current.count;
         document.getElementById('kerf').value = current.kerf !== undefined ? current.kerf : 4;
-        document.getElementById('edgeVal').value = current.edge !== undefined ? current.edge : 0.8;
-        document.getElementById('doorGap').value = current.doorGap !== undefined ? current.doorGap : 2;
+        document.getElementById('edgeVal').value = current.edge !== undefined ? current.edge : 0;
+        document.getElementById('doorGap').value = current.doorGap !== undefined ? current.doorGap : 0;
 
         document.getElementById('parts-header-title').innerText = `2. "${current.name}" деталууд`;
         document.getElementById('result-header-title').innerText = `3. "${current.name}" зүсэлтийн зураглал`;
@@ -279,22 +321,13 @@
       container.innerHTML = "";
 
       parts.forEach((p, idx) => {
-        if (p.hasEdge === undefined) p.hasEdge = true;
-        if (p.isDoor === undefined) p.isDoor = false;
-        if (p.doorMinusW === undefined) p.doorMinusW = false;
-        if (p.doorMinusH === undefined) p.doorMinusH = false;
-        if (p.eU1 === undefined) p.eU1 = true;
-        if (p.eU2 === undefined) p.eU2 = true;
-        if (p.eO1 === undefined) p.eO1 = true;
-        if (p.eO2 === undefined) p.eO2 = true;
-
         const div = document.createElement('div');
         div.className = 'input-group part-item';
         div.innerHTML = `
           <span class="part-num">${idx + 1}.</span>
-          <input type="text" inputmode="numeric" class="pW inp-size" placeholder="Бэлэн Урт" value="${p.w || ''}" oninput="onPartInputChanged()">
+          <input type="text" inputmode="numeric" class="pW inp-size" placeholder="Урт" value="${p.w || ''}" oninput="onPartInputChanged()">
           <span>х</span>
-          <input type="text" inputmode="numeric" class="pH inp-size" placeholder="Бэлэн Өргөн" value="${p.h || ''}" oninput="onPartInputChanged()">
+          <input type="text" inputmode="numeric" class="pH inp-size" placeholder="Өргөн" value="${p.h || ''}" oninput="onPartInputChanged()">
           <span>-></span>
           <input type="text" inputmode="numeric" class="pCount inp-count" placeholder="Тоо" value="${p.count !== undefined ? p.count : 1}" oninput="onPartInputChanged()">
           <span>ш</span>
@@ -305,20 +338,18 @@
           </div>
 
           <div class="door-axis-selectors" id="doorAxisBox_${idx}" style="display: ${p.isDoor ? 'flex' : 'none'};">
-            <span>Зай хасах:</span>
             <label><input type="checkbox" class="doorMinusW" ${p.doorMinusW ? 'checked' : ''} onchange="onPartInputChanged()"> Урт</label>
             <label><input type="checkbox" class="doorMinusH" ${p.doorMinusH ? 'checked' : ''} onchange="onPartInputChanged()"> Өргөн</label>
           </div>
 
           <div class="edge-selectors" id="edgeBox_${idx}" style="display: ${p.hasEdge ? 'flex' : 'none'};">
-            <span>Ирмэг:</span>
             <label><input type="checkbox" class="eU1" ${p.eU1 ? 'checked' : ''} onchange="onPartInputChanged()"> У1</label>
             <label><input type="checkbox" class="eU2" ${p.eU2 ? 'checked' : ''} onchange="onPartInputChanged()"> У2</label>
             <label><input type="checkbox" class="eO1" ${p.eO1 ? 'checked' : ''} onchange="onPartInputChanged()"> Ө1</label>
             <label><input type="checkbox" class="eO2" ${p.eO2 ? 'checked' : ''} onchange="onPartInputChanged()"> Ө2</label>
           </div>
 
-          <div class="cut-size-display" id="cutDisplay_${idx}">✂️ Зүсэх: 0x0</div>
+          <div class="cut-size-display" id="cutDisplay_${idx}">✂️ Зүсэх: ${p.w}x${p.h}</div>
 
           <button class="btn-remove-item" onclick="removePart(${idx})">✕</button>
         `;
@@ -356,15 +387,15 @@
         let w = parseFloat(row.querySelector('.pW').value) || 0;
         let h = parseFloat(row.querySelector('.pH').value) || 0;
         let count = parseInt(row.querySelector('.pCount').value) || 1;
-        let hasEdge = row.querySelector('.hasEdge').checked;
-        let isDoor = row.querySelector('.isDoor').checked;
-        let doorMinusW = row.querySelector('.doorMinusW').checked;
-        let doorMinusH = row.querySelector('.doorMinusH').checked;
+        let hasEdge = row.querySelector('.hasEdge') ? row.querySelector('.hasEdge').checked : false;
+        let isDoor = row.querySelector('.isDoor') ? row.querySelector('.isDoor').checked : false;
+        let doorMinusW = row.querySelector('.doorMinusW') ? row.querySelector('.doorMinusW').checked : false;
+        let doorMinusH = row.querySelector('.doorMinusH') ? row.querySelector('.doorMinusH').checked : false;
         
-        let eU1 = row.querySelector('.eU1').checked;
-        let eU2 = row.querySelector('.eU2').checked;
-        let eO1 = row.querySelector('.eO1').checked;
-        let eO2 = row.querySelector('.eO2').checked;
+        let eU1 = row.querySelector('.eU1') ? row.querySelector('.eU1').checked : false;
+        let eU2 = row.querySelector('.eU2') ? row.querySelector('.eU2').checked : false;
+        let eO1 = row.querySelector('.eO1') ? row.querySelector('.eO1').checked : false;
+        let eO2 = row.querySelector('.eO2') ? row.querySelector('.eO2').checked : false;
 
         let cutW = w;
         let cutH = h;
@@ -394,12 +425,12 @@
       sheetsData.push({
         id: newId,
         name: `Хавтан ${sheetsData.length + 1}`,
-        w: 2745,
-        h: 1830,
-        count: 6,
+        w: 2800,
+        h: 1220,
+        count: 5,
         kerf: 4,
-        edge: 0.8,
-        doorGap: 2,
+        edge: 0,
+        doorGap: 0,
         parts: []
       });
       activeTabId = newId;
@@ -425,7 +456,7 @@
       const current = sheetsData.find(s => s.id === activeTabId);
       if (current) {
         if (!current.parts) current.parts = [];
-        current.parts.push({ w: '', h: '', count: 1, hasEdge: true, isDoor: false, doorMinusW: false, doorMinusH: false, eU1: true, eU2: true, eO1: true, eO2: true });
+        current.parts.push({ w: '', h: '', count: 1, hasEdge: false, isDoor: false, doorMinusW: false, doorMinusH: false, eU1: false, eU2: false, eO1: false, eO2: false });
         renderParts(current.parts);
         autoSave();
       }
@@ -462,8 +493,8 @@
               if (!isNaN(w) && !isNaN(h) && w > 0 && h > 0) {
                 importedParts.push({ 
                   w: w, h: h, count: count, 
-                  hasEdge: true, isDoor: false, doorMinusW: false, doorMinusH: false, 
-                  eU1: true, eU2: true, eO1: true, eO2: true 
+                  hasEdge: false, isDoor: false, doorMinusW: false, doorMinusH: false, 
+                  eU1: false, eU2: false, eO1: false, eO2: false 
                 });
               }
             }
@@ -476,7 +507,7 @@
               renderParts(current.parts);
               autoSave();
               clearResults();
-              alert(`✅ Excel-ээс ${importedParts.length} деталь орууллаа!`);
+              alert(`✅ Excel-ээс амжилттай ${importedParts.length} деталь орууллаа!`);
             }
           }
         } catch (err) {
@@ -487,7 +518,134 @@
       reader.readAsArrayBuffer(file);
     }
 
-    // --- MAXCUT ULTRA BEST-FIT OPTIMIZER ENGINE (v7.0) ---
+    // --- MAXRECTS MAXIMAL FREE RECTANGLES ALGORITHM ENGINE ---
+    class MaxRectsBinPack {
+      constructor(width, height, kerf = 4) {
+        this.binWidth = width;
+        this.binHeight = height;
+        this.kerf = kerf;
+        this.usedRectangles = [];
+        this.freeRectangles = [{ x: 0, y: 0, w: width, h: height }];
+      }
+
+      insert(width, height, method = 'BestShortSideFit') {
+        let bestNode = { x: 0, y: 0, w: 0, h: 0, rot: false };
+        let bestShortSideFit = Infinity;
+        let bestAreaFit = Infinity;
+
+        for (let i = 0; i < this.freeRectangles.length; i++) {
+          let free = this.freeRectangles[i];
+
+          // 1. Non-rotated
+          if (free.w >= width && free.h >= height) {
+            let leftoverHoriz = Math.abs(free.w - width);
+            let leftoverVert = Math.abs(free.h - height);
+            let shortSide = Math.min(leftoverHoriz, leftoverVert);
+            let areaFit = free.w * free.h - width * height;
+
+            if (method === 'BestShortSideFit' && shortSide < bestShortSideFit) {
+              bestNode = { x: free.x, y: free.y, w: width, h: height, rot: false };
+              bestShortSideFit = shortSide;
+            } else if (method === 'BestAreaFit' && areaFit < bestAreaFit) {
+              bestNode = { x: free.x, y: free.y, w: width, h: height, rot: false };
+              bestAreaFit = areaFit;
+            }
+          }
+
+          // 2. Rotated
+          if (free.w >= height && free.h >= width) {
+            let leftoverHoriz = Math.abs(free.w - height);
+            let leftoverVert = Math.abs(free.h - width);
+            let shortSide = Math.min(leftoverHoriz, leftoverVert);
+            let areaFit = free.w * free.h - width * height;
+
+            if (method === 'BestShortSideFit' && shortSide < bestShortSideFit) {
+              bestNode = { x: free.x, y: free.y, w: height, h: width, rot: true };
+              bestShortSideFit = shortSide;
+            } else if (method === 'BestAreaFit' && areaFit < bestAreaFit) {
+              bestNode = { x: free.x, y: free.y, w: height, h: width, rot: true };
+              bestAreaFit = areaFit;
+            }
+          }
+        }
+
+        if (bestNode.w === 0) return null;
+
+        this.placeRectangle(bestNode);
+        return bestNode;
+      }
+
+      placeRectangle(node) {
+        let numFreeRectangles = this.freeRectangles.length;
+        let i = 0;
+        let w_eff = node.w + this.kerf;
+        let h_eff = node.h + this.kerf;
+
+        while (i < numFreeRectangles) {
+          if (this.splitFreeNode(this.freeRectangles[i], node, w_eff, h_eff)) {
+            this.freeRectangles.splice(i, 1);
+            numFreeRectangles--;
+          } else {
+            i++;
+          }
+        }
+
+        this.pruneFreeList();
+        this.usedRectangles.push(node);
+      }
+
+      splitFreeNode(free, node, w_eff, h_eff) {
+        if (node.x >= free.x + free.w || node.x + w_eff <= free.x ||
+            node.y >= free.y + free.h || node.y + h_eff <= free.y) {
+          return false;
+        }
+
+        if (node.y > free.y && node.y < free.y + free.h) {
+          let newNode = Object.assign({}, free, { h: node.y - free.y });
+          this.freeRectangles.push(newNode);
+        }
+
+        if (node.y + h_eff < free.y + free.h) {
+          let newNode = Object.assign({}, free, { y: node.y + h_eff, h: free.y + free.h - (node.y + h_eff) });
+          this.freeRectangles.push(newNode);
+        }
+
+        if (node.x > free.x && node.x < free.x + free.w) {
+          let newNode = Object.assign({}, free, { w: node.x - free.x });
+          this.freeRectangles.push(newNode);
+        }
+
+        if (node.x + w_eff < free.x + free.w) {
+          let newNode = Object.assign({}, free, { x: node.x + w_eff, w: free.x + free.w - (node.x + w_eff) });
+          this.freeRectangles.push(newNode);
+        }
+
+        return true;
+      }
+
+      pruneFreeList() {
+        for (let i = 0; i < this.freeRectangles.length; i++) {
+          for (let j = i + 1; j < this.freeRectangles.length; j++) {
+            if (this.isContainedIn(this.freeRectangles[i], this.freeRectangles[j])) {
+              this.freeRectangles.splice(i, 1);
+              i--;
+              break;
+            }
+            if (this.isContainedIn(this.freeRectangles[j], this.freeRectangles[i])) {
+              this.freeRectangles.splice(j, 1);
+              j--;
+            }
+          }
+        }
+      }
+
+      isContainedIn(a, b) {
+        return a.x >= b.x && a.y >= b.y &&
+               a.x + a.w <= b.x + b.w &&
+               a.y + a.h <= b.y + b.h;
+      }
+    }
+
     function calculateNesting() {
       autoSave();
 
@@ -538,118 +696,71 @@
         return;
       }
 
-      let bestResult = runUltraOptimizer([...basePartsList], sheetW, sheetH, kerf, maxSheets);
+      // Order parts by Area then Max Dimension descending
+      basePartsList.sort((a, b) => (b.area - a.area) || (Math.max(b.w, b.h) - Math.max(a.w, a.h)));
 
-      bestResult.sheets.forEach((placedParts, idx) => {
-        renderSingleSheetCanvas(currentSheet.name, sheetW, sheetH, placedParts, idx + 1, bestResult.sheets.length);
+      let bins = [];
+      let unplaced = [];
+
+      basePartsList.forEach(p => {
+        let placed = false;
+        // Try inside existing bins
+        for (let b of bins) {
+          let node = b.insert(p.w, p.h, 'BestShortSideFit');
+          if (node) {
+            node.label = p.label;
+            placed = true;
+            break;
+          }
+        }
+
+        if (!placed) {
+          if (bins.length < maxSheets) {
+            let newBin = new MaxRectsBinPack(sheetW, sheetH, kerf);
+            let node = newBin.insert(p.w, p.h, 'BestShortSideFit');
+            if (node) {
+              node.label = p.label;
+              bins.push(newBin);
+              placed = true;
+            } else {
+              unplaced.push(p);
+            }
+          } else {
+            unplaced.push(p);
+          }
+        }
+      });
+
+      bins.forEach((b, idx) => {
+        renderSingleSheetCanvas(currentSheet.name, sheetW, sheetH, b.usedRectangles, idx + 1, bins.length);
       });
 
       const statusDiv = document.getElementById('status');
       statusDiv.style.display = "block";
       
       let totalPlacedArea = 0;
-      bestResult.sheets.forEach(sh => {
-        sh.forEach(p => totalPlacedArea += (p.w * p.h));
+      bins.forEach(b => {
+        b.usedRectangles.forEach(p => totalPlacedArea += (p.w * p.h));
       });
-      let totalSheetArea = bestResult.sheets.length * (sheetW * sheetH);
+      let totalSheetArea = bins.length * (sheetW * sheetH);
       let effPercent = totalSheetArea > 0 ? ((totalPlacedArea / totalSheetArea) * 100).toFixed(2) : 0;
       let wastePercent = (100 - effPercent).toFixed(2);
 
-      if(bestResult.remaining.length > 0) {
+      if(unplaced.length > 0) {
         statusDiv.className = "status-msg status-error";
-        let badgesHtml = bestResult.remaining.map(p => `<span class="unplaced-badge">⚠️ ${p.label}</span>`).join(" ");
+        let badgesHtml = unplaced.map(p => `<span class="unplaced-badge">⚠️ ${p.label}</span>`).join(" ");
         statusDiv.innerHTML = `
-          <div>⚠️ <b>АНХААР:</b> Нийт <b>${bestResult.remaining.length}</b> деталь багталгүй үлдлээ! (Хавтангийн тоог нэмнэ үү)</div>
+          <div>⚠️ <b>АНХААР:</b> Нийт <b>${unplaced.length}</b> деталь багталгүй үлдлээ! (Хавтангийн тоог нэмнэ үү)</div>
           <div>📊 Ашиглалт: <b>${effPercent}%</b> | Нийт хаягдал: <b>${wastePercent}%</b></div>
           <div style="margin-top:8px;"><b>Үлдсэн деталууд:</b></div>
           <div class="unplaced-box">${badgesHtml}</div>
         `;
       } else {
         statusDiv.className = "status-msg status-success";
-        statusDiv.innerHTML = `🎉 <b>MAXCUT ТӨГС ОПТИМИЗАЦИ БОЛЛОО!</b> Нийт ${basePartsList.length} деталь ердөө <b>${bestResult.sheets.length} хавтанд</b> багтлаа. <br>📊 Хавтангийн Ашиглалт: <b>${effPercent}%</b> | Хаягдал (Wastage): <b>${wastePercent}%</b>`;
+        statusDiv.innerHTML = `🎉 <b>MAXRECTS ТӨГС ОПТИМИЗАЦИ БОЛЛОО!</b> <br>Нийт ${basePartsList.length} деталь ердөө <b>${bins.length} хавтанд (2800х1220) 100% БҮРЭН БАГТЛАА</b>. <br>📊 Хавтангийн Нийт Ашиглалт: <b>${effPercent}%</b> | Хаягдал (Wastage): <b>${wastePercent}%</b>`;
       }
 
       document.getElementById('pdfBtn').style.display = "block";
-    }
-
-    // MAXCUT ULTRA PACKING ALGORITHM
-    function runUltraOptimizer(partsList, sheetW, sheetH, kerf, maxSheets) {
-      let remaining = [...partsList];
-      let sheets = [];
-
-      // Талбай болон урт талаар нь эрэмбэлэх
-      remaining.sort((a, b) => b.area - a.area || Math.max(b.w, b.h) - Math.max(a.w, a.h));
-
-      while (remaining.length > 0 && sheets.length < maxSheets) {
-        let placed = [];
-        let spaces = [{ x: 0, y: 0, w: sheetW, h: sheetH }];
-
-        let i = 0;
-        while (i < remaining.length) {
-          let p = remaining[i];
-          let bestFit = null;
-
-          // Сул зайнаас хамгийн бага хаягдал гарахаар байрлал хайх
-          for (let sIdx = 0; sIdx < spaces.length; sIdx++) {
-            let space = spaces[sIdx];
-
-            // 1. Уртын дагуу (Эхний чиглэл)
-            if (p.w <= space.w && p.h <= space.h) {
-              let waste = (space.w - p.w) * space.h + (space.h - p.h) * p.w;
-              if (!bestFit || waste < bestFit.waste) {
-                bestFit = { spaceIdx: sIdx, rot: false, w: p.w, h: p.h, waste: waste };
-              }
-            }
-
-            // 2. Өргөний дагуу (Эргүүлж шигтгэх)
-            if (p.h <= space.w && p.w <= space.h) {
-              let waste = (space.w - p.h) * space.h + (space.h - p.w) * p.h;
-              if (!bestFit || waste < bestFit.waste) {
-                bestFit = { spaceIdx: sIdx, rot: true, w: p.h, h: p.w, waste: waste };
-              }
-            }
-          }
-
-          if (bestFit) {
-            let targetSpace = spaces.splice(bestFit.spaceIdx, 1)[0];
-
-            placed.push({
-              x: targetSpace.x,
-              y: targetSpace.y,
-              w: bestFit.w,
-              h: bestFit.h,
-              label: p.label
-            });
-
-            // Үлдсэн зайг зүсэлтийн шугамын дагуу хувааж дараагийн деталуудад бэлдэх
-            let rightW = targetSpace.w - bestFit.w - kerf;
-            let bottomH = targetSpace.h - bestFit.h - kerf;
-
-            if (rightW > 0) {
-              spaces.push({ x: targetSpace.x + bestFit.w + kerf, y: targetSpace.y, w: rightW, h: bestFit.h });
-            }
-            if (bottomH > 0) {
-              spaces.push({ x: targetSpace.x, y: targetSpace.y + bestFit.h + kerf, w: targetSpace.w, h: bottomH });
-            }
-
-            // Сул зайн жагсаалтыг байрлалаар нь шинэчлэх
-            spaces.sort((a, b) => (a.y - b.y) || (a.x - b.x));
-
-            remaining.splice(i, 1);
-            i = 0; // Шинэ зай үүссэн тул үлдсэн деталийг дахин эхнээс нь шалгах
-          } else {
-            i++;
-          }
-        }
-
-        if (placed.length > 0) {
-          sheets.push(placed);
-        } else {
-          break;
-        }
-      }
-
-      return { sheets: sheets, remaining: remaining };
     }
 
     function renderSingleSheetCanvas(sheetName, sheetW, sheetH, placedParts, sheetIndex, totalSheets) {
@@ -666,7 +777,7 @@
       const headerDiv = document.createElement('div');
       headerDiv.className = 'sheet-header-info';
       headerDiv.innerHTML = `
-        <span>Layout ${sheetIndex} of ${totalSheets} - ${sheetName} (${sheetW} mm x ${sheetH} mm)</span>
+        <span>Хавтан ${sheetIndex} / ${totalSheets} - ${sheetName} (${sheetW} mm x ${sheetH} mm)</span>
         <span>Деталь: ${placedParts.length} ш | Хавтангийн Ашиглалт: <b>${effPct}%</b> (Хаягдал: <b>${wastePct}%</b>)</span>
       `;
       wrapper.appendChild(headerDiv);
@@ -674,28 +785,39 @@
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       
-      const targetWidth = 1000;
+      const targetWidth = 1050;
       const scale = targetWidth / sheetW;
       
       canvas.width = targetWidth;
       canvas.height = sheetH * scale;
 
-      ctx.fillStyle = "#dcdcdc";
+      // Draw background
+      ctx.fillStyle = "#e0e0e0";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      placedParts.forEach(p => {
+      // Color palette for parts
+      const colors = ["#1a73e8", "#34a853", "#fbbc05", "#ea4335", "#9c27b0", "#00bcd4", "#ff9800", "#795548"];
+
+      placedParts.forEach((p, idx) => {
         const px = p.x * scale;
         const py = p.y * scale;
         const pw = p.w * scale;
         const ph = p.h * scale;
 
+        // Fill part background
         ctx.fillStyle = "#ffffff";
         ctx.fillRect(px, py, pw, ph);
 
-        ctx.strokeStyle = "#1a73e8";
-        ctx.lineWidth = 1.5;
+        // Border
+        ctx.strokeStyle = colors[idx % colors.length];
+        ctx.lineWidth = 2;
         ctx.strokeRect(px, py, pw, ph);
 
+        // Fill subtle color
+        ctx.fillStyle = colors[idx % colors.length] + "22"; // opacity
+        ctx.fillRect(px, py, pw, ph);
+
+        // Label
         ctx.fillStyle = "#202124";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
@@ -704,7 +826,7 @@
         ctx.font = `bold ${fontSize}px -apple-system, sans-serif`;
 
         if (pw > 20 && ph > 15) {
-          ctx.fillText(p.label, px + pw / 2, py + ph / 2);
+          ctx.fillText(`${p.label} ${p.rot ? '(90°)' : ''}`, px + pw / 2, py + ph / 2);
         }
       });
 
