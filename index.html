@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MaxCut Алгоритмтай Хавтан Зүсэлт v4.0</title>
+  <title>Уртын Дагуу Зүсэлттэй MaxCut Engine v5.0</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
@@ -64,7 +64,7 @@
 </head>
 <body>
 
-  <h2>✂️ MaxCut Логик бүхий Хавтан Зүсэлт <span style="font-size: 14px; color: #1a73e8; font-weight: normal;">v4.0</span></h2>
+  <h2>📏 Уртын Дагуу Зүсэлттэй MaxCut v5.0</h2>
 
   <div class="sticky-header-container">
     <div class="card" style="margin-bottom: 0;">
@@ -126,7 +126,7 @@
     <button class="btn-add" onclick="addPartInput()">+ Шинэ деталь нэмэх</button>
   </div>
 
-  <button class="main-btn" onclick="calculateNesting()">🧮 MaxCut Өрөлт Тооцоолох</button>
+  <button class="main-btn" onclick="calculateNesting()">🧮 Уртын Дагуу Өрөлт Тооцоолох</button>
 
   <div class="card canvas-container" style="margin-top: 20px;">
     <h3 id="result-header-title">3. Зүсэлтийн зураглал</h3>
@@ -142,7 +142,7 @@
     let activeTabId = null;
 
     function initData() {
-      const savedSheets = localStorage.getItem('cut_sheets_v4_0') || localStorage.getItem('cut_sheets_v3_14');
+      const savedSheets = localStorage.getItem('cut_sheets_v5_0') || localStorage.getItem('cut_sheets_v4_0');
 
       if (savedSheets) {
         try {
@@ -174,7 +174,7 @@
 
     function autoSave() {
       saveCurrentTabFieldsStateOnly();
-      localStorage.setItem('cut_sheets_v4_0', JSON.stringify(sheetsData));
+      localStorage.setItem('cut_sheets_v5_0', JSON.stringify(sheetsData));
     }
 
     function autoSaveAndRefreshLive() {
@@ -487,7 +487,7 @@
       reader.readAsArrayBuffer(file);
     }
 
-    // --- MAXCUT ADVANCED ENGINE (v4.0) ---
+    // --- LONGITUDINAL STRIP PACKING ENGINE (v5.0) ---
     function calculateNesting() {
       autoSave();
 
@@ -537,28 +537,7 @@
         return;
       }
 
-      // MaxCut Sorting Logic: PDF дээрх шиг урт болон талбайгаар нь эхэнд нь эрэмбэлэх
-      let sortRules = [
-        (a, b) => (Math.max(b.w, b.h) - Math.max(a.w, a.h)), // Max dimension first (MaxCut heuristic)
-        (a, b) => (b.w * b.h - a.w * a.h),                   // Area largest first
-        (a, b) => (b.w + b.h) - (a.w + a.h)                  // Perimeter
-      ];
-
-      let bestResult = null;
-      let minUnplaced = Infinity;
-      let minSheets = Infinity;
-
-      for (let sortFn of sortRules) {
-        let sortedParts = [...basePartsList].sort(sortFn);
-        let res = runMaxCutGuillotine(sortedParts, sheetW, sheetH, kerf, maxSheets);
-        
-        if (res.remaining.length < minUnplaced || 
-           (res.remaining.length === minUnplaced && res.sheets.length < minSheets)) {
-          minUnplaced = res.remaining.length;
-          minSheets = res.sheets.length;
-          bestResult = res;
-        }
-      }
+      let bestResult = runLongitudinalStripPacking([...basePartsList], sheetW, sheetH, kerf, maxSheets);
 
       bestResult.sheets.forEach((placedParts, idx) => {
         renderSingleSheetCanvas(currentSheet.name, sheetW, sheetH, placedParts, idx + 1, bestResult.sheets.length);
@@ -586,75 +565,81 @@
         `;
       } else {
         statusDiv.className = "status-msg status-success";
-        statusDiv.innerHTML = `🎉 <b>АМЖИЛТТАЙ!</b> Нийт ${basePartsList.length} деталь <b>${bestResult.sheets.length} хавтанд (Layout)</b> багтлаа. <br>📊 Ашиглалт: <b>${effPercent}%</b> | Хаягдал (Wastage): <b>${wastePercent}%</b>`;
+        statusDiv.innerHTML = `🎉 <b>АМЖИЛТТАЙ!</b> (Уртын дагуу зүсэлт) Нийт ${basePartsList.length} деталь <b>${bestResult.sheets.length} хавтанд</b> багтлаа. <br>📊 Ашиглалт: <b>${effPercent}%</b> | Хаягдал (Wastage): <b>${wastePercent}%</b>`;
       }
 
       document.getElementById('pdfBtn').style.display = "block";
     }
 
-    // PDF дээрх MaxCut-ийн Гиллотин зүсэлтийн шулуун блокийн алгоритм
-    function runMaxCutGuillotine(partsList, sheetW, sheetH, kerf, maxSheets) {
+    // УРТЫН ДАГУУ ТУУЗ БОЛГОЖ ЗҮСЭХ АЛГОРИТМ
+    function runLongitudinalStripPacking(partsList, sheetW, sheetH, kerf, maxSheets) {
       let remaining = [...partsList];
       let sheets = [];
 
+      // Деталуудыг эхлээд урт ба өргөнөөр нь дараалуулна
+      remaining.sort((a, b) => Math.max(b.w, b.h) - Math.max(a.w, a.h));
+
       while (remaining.length > 0 && sheets.length < maxSheets) {
         let placed = [];
-        let freeNodes = [{ x: 0, y: 0, w: sheetW, h: sheetH }];
+        let currentY = 0;
 
-        let i = 0;
-        while (i < remaining.length) {
-          let part = remaining[i];
-          let bestNodeIdx = -1;
-          let bestRotated = false;
-          let minShortWaste = Infinity;
+        while (currentY < sheetH && remaining.length > 0) {
+          // Үлдсэн Y талбайд багтах деталийг хайх
+          let bestIdx = -1;
+          let bestOrientedW = 0;
+          let bestOrientedH = 0;
 
-          for (let n = 0; n < freeNodes.length; n++) {
-            let node = freeNodes[n];
-
-            // 1. Эргүүлэхгүй өрж үзэх
-            if (part.w <= node.w && part.h <= node.h) {
-              let waste = Math.min(node.w - part.w, node.h - part.h);
-              if (waste < minShortWaste) {
-                minShortWaste = waste;
-                bestNodeIdx = n;
-                bestRotated = false;
-              }
+          for (let i = 0; i < remaining.length; i++) {
+            let p = remaining[i];
+            
+            // X дагуу хэвтүүлж тавих (p.w X дагуу, p.h Y дагуу)
+            if (p.h <= (sheetH - currentY) && p.w <= sheetW) {
+              bestIdx = i;
+              bestOrientedW = p.w;
+              bestOrientedH = p.h;
+              break;
             }
-            // 2. 90 градус эргүүлж өрж үзэх
-            if (part.h <= node.w && part.w <= node.h) {
-              let waste = Math.min(node.w - part.h, node.h - part.w);
-              if (waste < minShortWaste) {
-                minShortWaste = waste;
-                bestNodeIdx = n;
-                bestRotated = true;
-              }
+            // Эргүүлж тавих (p.h X дагуу, p.w Y дагуу)
+            if (p.w <= (sheetH - currentY) && p.h <= sheetW) {
+              bestIdx = i;
+              bestOrientedW = p.h;
+              bestOrientedH = p.w;
+              break;
             }
           }
 
-          if (bestNodeIdx !== -1) {
-            let node = freeNodes.splice(bestNodeIdx, 1)[0];
-            let pw = bestRotated ? part.h : part.w;
-            let ph = bestRotated ? part.w : part.h;
+          if (bestIdx === -1) break; // Багтах деталь олдохгүй бол дараагийн хавтан руу
 
-            placed.push({ x: node.x, y: node.y, w: pw, h: ph, label: part.label });
+          let stripH = bestOrientedH;
+          let currentX = 0;
 
-            let remW = node.w - pw - kerf;
-            let remH = node.h - ph - kerf;
+          // Уртын дагуу тууз (Strip) үүсгэж деталиудыг дараалуулан өрөх
+          let j = 0;
+          while (j < remaining.length && currentX < sheetW) {
+            let p = remaining[j];
+            let fitsNormal = (p.h <= stripH && p.w <= (sheetW - currentX));
+            let fitsRotated = (p.w <= stripH && p.h <= (sheetW - currentX));
 
-            // MaxCut-ийн Гудамж үүсгэх тусгаарлалт
-            if (remW > remH) {
-              if (remW > 0) freeNodes.push({ x: node.x + pw + kerf, y: node.y, w: remW, h: node.h });
-              if (remH > 0) freeNodes.push({ x: node.x, y: node.y + ph + kerf, w: pw, h: remH });
+            if (fitsNormal || fitsRotated) {
+              let pw = fitsNormal ? p.w : p.h;
+              let ph = fitsNormal ? p.h : p.w;
+
+              placed.push({
+                x: currentX,
+                y: currentY,
+                w: pw,
+                h: ph,
+                label: p.label
+              });
+
+              currentX += pw + kerf;
+              remaining.splice(j, 1);
             } else {
-              if (remH > 0) freeNodes.push({ x: node.x, y: node.y + ph + kerf, w: node.w, h: remH });
-              if (remW > 0) freeNodes.push({ x: node.x + pw + kerf, y: node.y, w: remW, h: ph });
+              j++;
             }
-
-            remaining.splice(i, 1);
-            i = 0; // Тэргүүн эрэмбийн деталийг дахин шалгах
-          } else {
-            i++;
           }
+
+          currentY += stripH + kerf;
         }
 
         if (placed.length > 0) {
