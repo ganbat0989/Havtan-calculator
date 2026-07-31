@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MaxCut v10.2 GUILLOTINE ENGINE - Шулуун Зүсэлт & Төрөл</title>
+  <title>MaxCut v10.3 GUILLOTINE ENGINE - Шулуун Зүсэлт & Төрөл</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
@@ -34,10 +34,8 @@
 
     .cut-size-display { font-size: 12px; font-weight: bold; color: #d93025; background: #fce8e6; padding: 6px 10px; border-radius: 6px; white-space: nowrap; }
 
-    .parts-header-actions { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f0f2f5; padding-bottom: 8px; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
-    .parts-actions-right { display: flex; gap: 8px; align-items: center; }
+    .parts-header-actions { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f0f2f5; padding-bottom: 8px; margin-bottom: 12px; }
     .btn-excel-tab { background: #107c41; color: white; border: none; border-radius: 6px; padding: 8px 14px; font-weight: bold; font-size: 13px; cursor: pointer; }
-    .btn-delete-all { background: #d93025; color: white; border: none; border-radius: 6px; padding: 8px 14px; font-weight: bold; font-size: 13px; cursor: pointer; }
 
     button.main-btn { width: 100%; padding: 15px; background: #1a73e8; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; font-weight: bold; transition: 0.2s; }
     button.main-btn:hover { background: #1557b0; }
@@ -67,7 +65,7 @@
 </head>
 <body>
 
-  <h2>✂️ MaxCut v10.2 GUILLOTINE ENGINE (БҮРЭН ШУЛУУН ЗҮСЭЛТ)</h2>
+  <h2>✂️ MaxCut v10.3 GUILLOTINE ENGINE (БҮРЭН ШУЛУУН ЗҮСЭЛТ)</h2>
 
   <div class="sticky-header-container">
     <div class="card" style="margin-bottom: 0;">
@@ -79,7 +77,7 @@
             <label>Хавтангийн нэр:</label>
             <input type="text" id="sheetName" placeholder="Нэр" oninput="autoSave()">
           </div>
-          <button class="btn-delete" onclick="deleteCurrentTab()" style="align-self: flex-end; height: 35px;">🗑️ Хавтан устгах</button>
+          <button class="btn-delete" onclick="deleteCurrentTab()" style="align-self: flex-end; height: 35px;">🗑️ Устгах</button>
         </div>
         <div style="display:flex; gap:6px; margin-bottom:8px;">
           <div class="input-wrapper">
@@ -109,10 +107,11 @@
             <input type="text" inputmode="numeric" id="doorGap" value="0" oninput="autoSaveAndRefreshLive()">
           </div>
         </div>
+        <!-- Зүсэлтийн төрлийг үндсэн мэдээлэл дээр сонгох болгосон хэсэг -->
         <div style="display:flex; gap:6px; margin-bottom:8px;">
           <div class="input-wrapper">
             <label>Зүсэлтийн төрөл:</label>
-            <select id="globalCutType" onchange="autoSaveAndRefreshLive()" style="padding: 8px; border-radius: 6px; width: 100%;">
+            <select id="globalCutType" onchange="autoSave()" style="padding: 8px; border-radius: 6px; width: 100%;">
               <option value="straight">Шулуун зүсэлт</option>
               <option value="cnc">CNC зүсэлт</option>
               <option value="frezer">Фрезер зүсэлт</option>
@@ -130,11 +129,8 @@
 
   <div class="card" style="margin-top: 15px;">
     <div class="parts-header-actions">
-      <h3 id="parts-header-title" style="margin: 0;">2. Зүсэх деталь хэсгүүд</h3>
-      <div class="parts-actions-right">
-        <button class="btn-excel-tab" onclick="document.getElementById('excelFileInput').click()">📊 Excel оруулах</button>
-        <button class="btn-delete-all" onclick="removeAllParts()">🗑️ Бүх деталийг устгах</button>
-      </div>
+      <h3 id="parts-header-title">2. Зүсэх деталь хэсгүүд</h3>
+      <button class="btn-excel-tab" onclick="document.getElementById('excelFileInput').click()">📊 Excel файл оруулж ирэх</button>
       <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" style="display:none;" onchange="importExcelFileForCurrentTab(event)">
     </div>
 
@@ -235,10 +231,8 @@
     let activeTabId = null;
 
     function initData() {
-      // Өмнөх бүх хувилбаруудын хадгалсан түлхүүрүүдээс шалгаж сэргээх
-      const savedSheets = localStorage.getItem('cut_sheets_v10_2') || 
-                          localStorage.getItem('cut_sheets_v10_1') || 
-                          localStorage.getItem('cut_sheets_v10_0');
+      // v10.3 / v10.2 localStorage түлхүүрээр хадгалах, шаардлагатай бол өмнөх хувилбараас өгөгдөл татах
+      const savedSheets = localStorage.getItem('cut_sheets_v10_3') || localStorage.getItem('cut_sheets_v10_2') || localStorage.getItem('cut_sheets_v10_0');
       if (savedSheets) {
         try { sheetsData = JSON.parse(savedSheets); } catch(e) { sheetsData = null; }
       } 
@@ -258,15 +252,12 @@
 
     function autoSave() {
       saveCurrentTabFieldsStateOnly();
-      localStorage.setItem('cut_sheets_v10_2', JSON.stringify(sheetsData));
+      localStorage.setItem('cut_sheets_v10_3', JSON.stringify(sheetsData));
     }
 
     function autoSaveAndRefreshLive() {
       autoSave();
       updateCutDisplayLabelsOnly();
-      if(document.getElementById('sheetsContainer').innerHTML !== "") {
-        calculateNesting();
-      }
     }
 
     function saveCurrentTabFieldsStateOnly() {
@@ -507,18 +498,6 @@
         current.parts.splice(index, 1);
         renderParts(current.parts);
         autoSave();
-      }
-    }
-
-    function removeAllParts() {
-      if (confirm("Та энэ хавтангийн бүх деталийг устгахдаа итгэлтэй байна уу?")) {
-        const current = sheetsData.find(s => s.id === activeTabId);
-        if (current) {
-          current.parts = [];
-          renderParts(current.parts);
-          autoSave();
-          clearResults();
-        }
       }
     }
 
