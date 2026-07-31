@@ -4,7 +4,6 @@ class GuillotineBinPack {
     this.binHeight = height;
     this.kerf = kerf;
     this.usedRectangles = [];
-    // Эхний байдлаар бүхэл хавтан
     this.freeRectangles = [{ x: 0, y: 0, w: width, h: height }];
   }
 
@@ -48,30 +47,28 @@ class GuillotineBinPack {
 
     this.freeRectangles.splice(bestIndex, 1);
 
-    // 2. БҮРЭН ШУЛУУН ДАЙРЧ ЗҮСЭХ (Guillotine Split) зарчим
+    // 2. БҮРЭН ШУЛУУН ДАЙРЧ ЗҮСЭХ (Guillotine Split)
     let w_eff = w + this.kerf;
     let h_eff = h + this.kerf;
 
     let remW = free.w - w_eff;
     let remH = free.h - h_eff;
 
-    // Сонголт: Хавтангийн бүтэн өртөөний дагуу тууз үүсгэн хуваана
-    if (free.w > free.h) {
-      // Босоо бүтэн шулуун зүсэлт
-      if (remW > 0) {
+    // Хавтангийн хэмжээнээс хамаарч туузыг тэнцүү бүтэн шугамаар тусгаарлана
+    if (remW > 0 && remH > 0) {
+      if (free.w >= free.h) {
+        // Босоо бүтэн зүсэлт
         this.freeRectangles.push({ x: free.x + w_eff, y: free.y, w: remW, h: free.h });
-      }
-      if (remH > 0) {
-        this.freeRectangles.push({ x: free.x, y: free.y + h_eff, w: w_eff - this.kerf, h: remH });
-      }
-    } else {
-      // Хэвтээ бүтэн шулуун зүсэлт
-      if (remH > 0) {
+        this.freeRectangles.push({ x: free.x, y: free.y + h_eff, w: w, h: remH });
+      } else {
+        // Хэвтээ бүтэн зүсэлт
         this.freeRectangles.push({ x: free.x, y: free.y + h_eff, w: free.w, h: remH });
+        this.freeRectangles.push({ x: free.x + w_eff, y: free.y, w: remW, h: h });
       }
-      if (remW > 0) {
-        this.freeRectangles.push({ x: free.x + w_eff, y: free.y, w: remW, h: h_eff - this.kerf });
-      }
+    } else if (remW > 0) {
+      this.freeRectangles.push({ x: free.x + w_eff, y: free.y, w: remW, h: free.h });
+    } else if (remH > 0) {
+      this.freeRectangles.push({ x: free.x, y: free.y + h_eff, w: free.w, h: remH });
     }
 
     this.usedRectangles.push(node);
