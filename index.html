@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MaxCut v10.3 GUILLOTINE ENGINE - Шулуун Зүсэлт & Төрөл</title>
+  <title>MaxCut v10.4 GUILLOTINE ENGINE - Шулуун Зүсэлт & Төрөл</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
@@ -34,8 +34,9 @@
 
     .cut-size-display { font-size: 12px; font-weight: bold; color: #d93025; background: #fce8e6; padding: 6px 10px; border-radius: 6px; white-space: nowrap; }
 
-    .parts-header-actions { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f0f2f5; padding-bottom: 8px; margin-bottom: 12px; }
+    .parts-header-actions { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f0f2f5; padding-bottom: 8px; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
     .btn-excel-tab { background: #107c41; color: white; border: none; border-radius: 6px; padding: 8px 14px; font-weight: bold; font-size: 13px; cursor: pointer; }
+    .btn-delete-all { background: #d93025; color: white; border: none; border-radius: 6px; padding: 8px 14px; font-weight: bold; font-size: 13px; cursor: pointer; }
 
     button.main-btn { width: 100%; padding: 15px; background: #1a73e8; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; font-weight: bold; transition: 0.2s; }
     button.main-btn:hover { background: #1557b0; }
@@ -65,7 +66,7 @@
 </head>
 <body>
 
-  <h2>✂️ MaxCut v10.3 GUILLOTINE ENGINE (БҮРЭН ШУЛУУН ЗҮСЭЛТ)</h2>
+  <h2>✂️ MaxCut v10.4 GUILLOTINE ENGINE (БҮРЭН ШУЛУУН ЗҮСЭЛТ)</h2>
 
   <div class="sticky-header-container">
     <div class="card" style="margin-bottom: 0;">
@@ -96,7 +97,7 @@
           </div>
           <div class="input-wrapper">
             <label>Ир (мм):</label>
-            <input type="text" inputmode="numeric" id="kerf" value="4" oninput="autoSave()">
+            <input type="text" inputmode="numeric" id="kerf" value="5" oninput="autoSave()">
           </div>
           <div class="input-wrapper">
             <label>Эмжээр (мм):</label>
@@ -107,7 +108,6 @@
             <input type="text" inputmode="numeric" id="doorGap" value="0" oninput="autoSaveAndRefreshLive()">
           </div>
         </div>
-        <!-- Зүсэлтийн төрлийг үндсэн мэдээлэл дээр сонгох болгосон хэсэг -->
         <div style="display:flex; gap:6px; margin-bottom:8px;">
           <div class="input-wrapper">
             <label>Зүсэлтийн төрөл:</label>
@@ -130,8 +130,11 @@
   <div class="card" style="margin-top: 15px;">
     <div class="parts-header-actions">
       <h3 id="parts-header-title">2. Зүсэх деталь хэсгүүд</h3>
-      <button class="btn-excel-tab" onclick="document.getElementById('excelFileInput').click()">📊 Excel файл оруулж ирэх</button>
-      <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" style="display:none;" onchange="importExcelFileForCurrentTab(event)">
+      <div style="display:flex; gap:6px;">
+        <button class="btn-delete-all" onclick="deleteAllParts()">🗑️ Бүх деталийг устгах</button>
+        <button class="btn-excel-tab" onclick="document.getElementById('excelFileInput').click()">📊 Excel файл оруулж ирэх</button>
+        <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" style="display:none;" onchange="importExcelFileForCurrentTab(event)">
+      </div>
     </div>
 
     <div id="parts-list"></div>
@@ -151,7 +154,7 @@
 
   <script>
     class GuillotineBinPack {
-      constructor(width, height, kerf = 4) {
+      constructor(width, height, kerf = 5) {
         this.binWidth = width;
         this.binHeight = height;
         this.kerf = kerf;
@@ -231,8 +234,7 @@
     let activeTabId = null;
 
     function initData() {
-      // v10.3 / v10.2 localStorage түлхүүрээр хадгалах, шаардлагатай бол өмнөх хувилбараас өгөгдөл татах
-      const savedSheets = localStorage.getItem('cut_sheets_v10_3') || localStorage.getItem('cut_sheets_v10_2') || localStorage.getItem('cut_sheets_v10_0');
+      const savedSheets = localStorage.getItem('cut_sheets_v10_4');
       if (savedSheets) {
         try { sheetsData = JSON.parse(savedSheets); } catch(e) { sheetsData = null; }
       } 
@@ -241,7 +243,7 @@
           { 
             id: 1, 
             name: "AGT Зүсвэр (2800х1220)", 
-            w: 2800, h: 1220, count: 5, kerf: 4, edge: 0, doorGap: 0, cutType: 'straight',
+            w: 2800, h: 1220, count: 5, kerf: 5, edge: 0, doorGap: 0, cutType: 'straight',
             parts: JSON.parse(JSON.stringify(agtDefaultParts))
           }
         ];
@@ -252,7 +254,7 @@
 
     function autoSave() {
       saveCurrentTabFieldsStateOnly();
-      localStorage.setItem('cut_sheets_v10_3', JSON.stringify(sheetsData));
+      localStorage.setItem('cut_sheets_v10_4', JSON.stringify(sheetsData));
     }
 
     function autoSaveAndRefreshLive() {
@@ -267,7 +269,7 @@
         current.w = parseFloat(document.getElementById('sheetW').value) || 0;
         current.h = parseFloat(document.getElementById('sheetH').value) || 0;
         current.count = parseInt(document.getElementById('sheetCount').value) || 1;
-        current.kerf = parseFloat(document.getElementById('kerf').value) || 4;
+        current.kerf = parseFloat(document.getElementById('kerf').value) || 5;
         current.edge = parseFloat(document.getElementById('edgeVal').value) || 0;
         current.doorGap = parseFloat(document.getElementById('doorGap').value) || 0;
         current.cutType = document.getElementById('globalCutType').value;
@@ -339,7 +341,7 @@
         document.getElementById('sheetW').value = current.w;
         document.getElementById('sheetH').value = current.h;
         document.getElementById('sheetCount').value = current.count;
-        document.getElementById('kerf').value = current.kerf !== undefined ? current.kerf : 4;
+        document.getElementById('kerf').value = current.kerf !== undefined ? current.kerf : 5;
         document.getElementById('edgeVal').value = current.edge !== undefined ? current.edge : 0;
         document.getElementById('doorGap').value = current.doorGap !== undefined ? current.doorGap : 0;
         document.getElementById('globalCutType').value = current.cutType || 'straight';
@@ -456,7 +458,7 @@
       const newId = Date.now();
       sheetsData.push({
         id: newId, name: `Хавтан ${sheetsData.length + 1}`,
-        w: 2800, h: 1220, count: 5, kerf: 4, edge: 0, doorGap: 0, cutType: 'straight', parts: []
+        w: 2800, h: 1220, count: 5, kerf: 5, edge: 0, doorGap: 0, cutType: 'straight', parts: []
       });
       activeTabId = newId;
       renderTabs();
@@ -498,6 +500,19 @@
         current.parts.splice(index, 1);
         renderParts(current.parts);
         autoSave();
+      }
+    }
+
+    function deleteAllParts() {
+      if (confirm("Энэ хавтан дээрх бүх деталийг устгахдаа итгэлтэй байна уу?")) {
+        autoSave();
+        const current = sheetsData.find(s => s.id === activeTabId);
+        if (current) {
+          current.parts = [];
+          renderParts(current.parts);
+          autoSave();
+          clearResults();
+        }
       }
     }
 
@@ -560,7 +575,7 @@
       let sheetH = Math.min(currentSheet.w, currentSheet.h);
       let edge = currentSheet.edge || 0;
       let doorGap = currentSheet.doorGap || 0;
-      let kerf = currentSheet.kerf || 4;
+      let kerf = currentSheet.kerf !== undefined ? currentSheet.kerf : 5;
       let maxSheets = currentSheet.count;
       let globalCutType = currentSheet.cutType || 'straight';
 
@@ -659,7 +674,7 @@
         `;
       } else {
         statusDiv.className = "status-msg status-success";
-        statusDiv.innerHTML = `✂️ <b>ГУЙЛОТИН БҮРЭН ШУЛУУН ЗҮСЭЛТ АМЖИЛТТАЙ БОЛЛОО!</b> <br>Нийт ${basePartsList.length} деталь <b>${bins.length} хавтанд ШУЛУУН ДАЙРЧ ЗҮСЭХ БОЛОМЖТОЙГООР</b> багтлаа. <br>📊 Хавтангийн Ашиглалт: <b>${effPercent}%</b> | Хаягдал: <b>${wastePercent}%</b>`;
+        statusDiv.innerHTML = `✂️ <b>ГУЙЛОТИН БҮРЭН ШУЛУУН ЗҮСЭЛТ АМЖИЛТТАЙ БОЛЛОО!</b> <br>Нийт ${basePartsList.length} деталь <b>${bins.length} хавтанд ШУЛУУН ДАЙРЧ ЗҮСЭХ БОЛОМЖТОЙГООР</b> багtлаа. <br>📊 Хавтангийн Ашиглалт: <b>${effPercent}%</b> | Хаягдал: <b>${wastePercent}%</b>`;
       }
 
       document.getElementById('pdfBtn').style.display = "block";
@@ -740,3 +755,4 @@
   </script>
 </body>
 </html>
+
