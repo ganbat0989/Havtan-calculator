@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Хавтан Зүсэлт Тооцоолуур Pro v3.7</title>
+  <title>Хавтан Зүсэлт Тооцоолуур Pro v3.8 (v3.5 руу буцлаа)</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
@@ -64,7 +64,7 @@
 </head>
 <body>
 
-  <h2>✂️ Хавтан Өрөлтийн Тооцоолуур Pro <span style="font-size: 14px; color: #1a73e8; font-weight: normal;">v3.7 Бага Хогдолтой Дарааллагч</span></h2>
+  <h2>✂️ Хавтан Өрөлтийн Тооцоолуур Pro <span style="font-size: 14px; color: #1a73e8; font-weight: normal;">v3.8 (Ухаалаг Шахмал)</span></h2>
 
   <div class="sticky-header-container">
     <div class="card" style="margin-bottom: 0;">
@@ -126,7 +126,7 @@
     <button class="btn-add" onclick="addPartInput()">+ Шинэ деталь нэмэх</button>
   </div>
 
-  <button class="main-btn" onclick="calculateNesting()">🧮 Хогдол Багатай Дарааллаар Өрөх</button>
+  <button class="main-btn" onclick="calculateNesting()">🧮 Ухаалаг MaxCut Өрөлт Хийх</button>
 
   <div class="card canvas-container" style="margin-top: 20px;">
     <h3 id="result-header-title">3. Зүсэлтийн зураглал</h3>
@@ -142,9 +142,9 @@
     let activeTabId = null;
 
     function initData() {
-      const savedSheets = localStorage.getItem('cut_sheets_v3_7') || 
-                          localStorage.getItem('cut_sheets_v3_6') || 
-                          localStorage.getItem('cut_sheets_v3_5');
+      const savedSheets = localStorage.getItem('cut_sheets_v3_8') || 
+                          localStorage.getItem('cut_sheets_v3_5') || 
+                          localStorage.getItem('cut_sheets_v3_4');
 
       if (savedSheets) {
         try {
@@ -176,7 +176,7 @@
 
     function autoSave() {
       saveCurrentTabFieldsStateOnly();
-      localStorage.setItem('cut_sheets_v3_7', JSON.stringify(sheetsData));
+      localStorage.setItem('cut_sheets_v3_8', JSON.stringify(sheetsData));
     }
 
     function autoSaveAndRefreshLive() {
@@ -524,7 +524,6 @@
               idx: partIdx,
               w: cutW, 
               h: cutH, 
-              originalOrder: basePartsList.length,
               label: `#${partIdx} (${cutW}x${cutH})` 
             });
           }
@@ -532,8 +531,38 @@
         }
       });
 
-      // Best-Fit + Sequence Priority Hybrid Engine (Хавтан тус бүрийн хогдлыг багасгаж, дарааллыг хадгална)
-      let bestResult = runLowestWasteOrderedEngine(basePartsList, sheetW, sheetH, kerf, maxSheets);
+      let bestResult = null;
+      let minUnplacedCount = Infinity;
+
+      let sortRules = [
+        (a, b) => (b.w * b.h - a.w * a.h) || (Math.max(b.w, b.h) - Math.max(a.w, a.h)),
+        (a, b) => (Math.max(b.w, b.h) - Math.max(a.w, a.h)) || (b.w * b.h - a.w * a.h),
+        (a, b) => (b.w - a.w) || (b.h - a.h),
+        (a, b) => (b.h - a.h) || (b.w - a.w),
+        (a, b) => (b.w + b.h) - (a.w + a.h),
+        (a, b) => (Math.min(b.w, b.h) - Math.min(a.w, a.h)),
+        (a, b) => (a.w * a.h - b.w * b.h)
+      ];
+
+      let fitModes = ['area', 'short', 'long'];
+      let splitHeuristics = ['smart', 'w_first', 'h_first'];
+
+      for (let sortFn of sortRules) {
+        for (let fitMode of fitModes) {
+          for (let splitHeuristic of splitHeuristics) {
+            let testList = [...basePartsList].sort(sortFn);
+            let res = runOptimizedGuillotineEngine(testList, sheetW, sheetH, kerf, maxSheets, fitMode, splitHeuristic);
+            
+            if (res.remaining.length < minUnplacedCount) {
+              minUnplacedCount = res.remaining.length;
+              bestResult = res;
+              if (minUnplacedCount === 0) break;
+            }
+          }
+          if (minUnplacedCount === 0) break;
+        }
+        if (minUnplacedCount === 0) break;
+      }
 
       bestResult.sheets.forEach((placedParts, idx) => {
         renderSingleSheetCanvas(currentSheet.name, sheetW, sheetH, placedParts, idx + 1);
@@ -552,13 +581,13 @@
         `;
       } else {
         statusDiv.className = "status-msg status-success";
-        statusDiv.innerText = `🎉 АМЖИЛТТАЙ! Бүх ${basePartsList.length} деталь хогдол багатай байдлаар ЯГ ${bestResult.sheets.length} ХАВТАНД БАГТЛАА!`;
+        statusDiv.innerText = `🎉 АМЖИЛТТАЙ! Бүх ${basePartsList.length} деталь ЯГ ${bestResult.sheets.length} ХАВТАНД 100% БАГТЛАА!`;
       }
 
       document.getElementById('pdfBtn').style.display = "block";
     }
 
-    function runLowestWasteOrderedEngine(partsList, sheetW, sheetH, kerf, maxSheets) {
+    function runOptimizedGuillotineEngine(partsList, sheetW, sheetH, kerf, maxSheets, fitMode, splitHeuristic) {
       let remaining = [...partsList];
       let sheets = [];
 
@@ -572,19 +601,15 @@
           let bestFitNode = null;
           let bestNodeIdx = -1;
           let bestRotated = false;
-          let minWasteScore = Infinity;
+          let minScore = Infinity;
 
-          // Find slots that leave minimal leftover space (Best-Fit waste reduction) + slight preference for input order
           for (let n = 0; n < freeNodes.length; n++) {
             let node = freeNodes[n];
 
             if (part.w <= node.w && part.h <= node.h) {
-              let wasteW = node.w - part.w;
-              let wasteH = node.h - part.h;
-              let wasteScore = (wasteW * wasteH) * 0.7 + (node.y * 5) + (node.x * 0.1) + (part.originalOrder * 0.01);
-              
-              if (wasteScore < minWasteScore) {
-                minWasteScore = wasteScore;
+              let score = getFitScore(node.w, node.h, part.w, part.h, fitMode);
+              if (score < minScore) {
+                minScore = score;
                 bestFitNode = node;
                 bestNodeIdx = n;
                 bestRotated = false;
@@ -592,12 +617,9 @@
             }
 
             if (part.h <= node.w && part.w <= node.h) {
-              let wasteW = node.w - part.h;
-              let wasteH = node.h - part.w;
-              let wasteScore = (wasteW * wasteH) * 0.7 + (node.y * 5) + (node.x * 0.1) + (part.originalOrder * 0.01);
-              
-              if (wasteScore < minWasteScore) {
-                minWasteScore = wasteScore;
+              let score = getFitScore(node.w, node.h, part.h, part.w, fitMode);
+              if (score < minScore) {
+                minScore = score;
                 bestFitNode = node;
                 bestNodeIdx = n;
                 bestRotated = true;
@@ -621,7 +643,14 @@
             let wRemain = node.w - pw - kerf;
             let hRemain = node.h - ph - kerf;
 
-            if (wRemain > hRemain) {
+            let splitHorizFirst = false;
+            if (splitHeuristic === 'w_first') splitHorizFirst = true;
+            else if (splitHeuristic === 'h_first') splitHorizFirst = false;
+            else {
+              splitHorizFirst = (wRemain > hRemain);
+            }
+
+            if (splitHorizFirst) {
               if (wRemain > 0) freeNodes.push({ x: node.x + pw + kerf, y: node.y, w: wRemain, h: node.h });
               if (hRemain > 0) freeNodes.push({ x: node.x, y: node.y + ph + kerf, w: pw, h: hRemain });
             } else {
@@ -630,7 +659,7 @@
             }
 
             remaining.splice(i, 1);
-            i = 0; 
+            i = 0;
           } else {
             i++;
           }
@@ -644,6 +673,14 @@
       }
 
       return { sheets: sheets, remaining: remaining };
+    }
+
+    function getFitScore(nodeW, nodeH, partW, partH, fitMode) {
+      let remW = nodeW - partW;
+      let remH = nodeH - partH;
+      if (fitMode === 'short') return Math.min(remW, remH);
+      if (fitMode === 'long') return Math.max(remW, remH);
+      return remW * remH;
     }
 
     function renderSingleSheetCanvas(sheetName, sheetW, sheetH, placedParts, sheetIndex) {
