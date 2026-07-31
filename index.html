@@ -1,225 +1,153 @@
-import React, { useState } from "react";
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AGT Зүсвэр Калькулятор v8.0</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    .container {
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h2 {
+      margin-top: 0;
+    }
+    .detail-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      background-color: #f9f9f9;
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid #eee;
+      flex-wrap: wrap;
+    }
+    .row-index {
+      font-weight: bold;
+      color: #2563eb;
+    }
+    input[type="number"] {
+      padding: 4px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .edges-group {
+      display: flex;
+      gap: 8px;
+      margin-left: 10px;
+      color: #2563eb;
+      font-weight: bold;
+    }
+    .cut-info {
+      margin-left: auto;
+      background-color: #fee2e2;
+      color: #dc2626;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    .btn-add {
+      margin-top: 10px;
+      padding: 8px 16px;
+      background-color: #2563eb;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .btn-delete {
+      color: red;
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
 
-export default function FurnitureCalculatorV8() {
-  // 1. Деталуудын жагсаалт (Анхны мөр болон шинэ мөр дээр ирмэгүүд бүгд checked: true)
-  const [details, setDetails] = useState([
-    {
-      id: 1,
-      length: 2775,
-      width: 700,
-      count: 1,
-      isEmjeer: true,
-      isKhaalga: false,
-      u1: true, // У1 чеклэгдсэн
-      u2: true, // У2 чеклэгдсэн
-      o1: true, // Ө1 чеклэгдсэн
-      o2: true, // Ө2 чеклэгдсэн
-    },
-  ]);
+  <div class="container">
+    <h2>2. "AGT Зүсвэр (2800x1220)" деталууд (v8.0)</h2>
+    <div id="details-list"></div>
+    <button class="btn-add" onclick="addRow()">+ Детал нэмэх</button>
+  </div>
 
-  // Шинэ мөр нэмэх функц
-  const addRow = () => {
-    const newRow = {
-      id: Date.now(),
-      length: 2775,
-      width: 700,
-      count: 1,
-      isEmjeer: true,
-      isKhaalga: false,
-      u1: true, // Ирмэгүүд бүгд чеклэгдсэнээр нэмэгдэнэ
-      u2: true,
-      o1: true,
-      o2: true,
-    };
-    setDetails([...details, newRow]);
-  };
+  <script>
+    // Анхны өгөгдөл - У1, У2, Ө1, Ө2 БҮГД ЧЕКЛЭГДСЭН (checked: true)
+    let details = [
+      { id: 1, length: 2775, width: 700, count: 1, isEmjeer: true, isKhaalga: false, u1: true, u2: true, o1: true, o2: true }
+    ];
 
-  // Утга өөрчлөх функц
-  const handleInputChange = (id, field, value) => {
-    setDetails(
-      details.map((item) =>
-        item.id === id ? { ...item, [field]: value } : item
-      )
-    );
-  };
+    function render() {
+      const listDiv = document.getElementById("details-list");
+      listDiv.innerHTML = "";
 
-  // Мөр устгах функц
-  const removeRow = (id) => {
-    setDetails(details.filter((item) => item.id !== id));
-  };
-
-  return (
-    <div style={{ padding: "20px", fontFamily: "sans-serif" }}>
-      <h2>2. "AGT Зүсвэр (2800x1220)" деталууд (v8.0)</h2>
-
-      {details.map((item, index) => (
-        <div
-          key={item.id}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            marginBottom: "10px",
-            backgroundColor: "#f9f9f9",
-            padding: "8px 12px",
-            borderRadius: "6px",
-          }}
-        >
-          <span style={{ fontWeight: "bold", color: "#2563eb" }}>
-            {index + 1}.
-          </span>
-
-          {/* Урт, Өргөн, Тоо ширхэг */}
-          <input
-            type="number"
-            value={item.length}
-            onChange={(e) =>
-              handleInputChange(item.id, "length", Number(e.target.value))
-            }
-            style={{ width: "60px", padding: "4px" }}
-          />
-          <span>x</span>
-          <input
-            type="number"
-            value={item.width}
-            onChange={(e) =>
-              handleInputChange(item.id, "width", Number(e.target.value))
-            }
-            style={{ width: "60px", padding: "4px" }}
-          />
-          <span>-&gt;</span>
-          <input
-            type="number"
-            value={item.count}
-            onChange={(e) =>
-              handleInputChange(item.id, "count", Number(e.target.value))
-            }
-            style={{ width: "40px", padding: "4px" }}
-          />
-          <span>ш</span>
-
-          {/* Эмжээр болон Хаалга */}
-          <label style={{ cursor: "pointer", marginLeft: "10px" }}>
-            <input
-              type="checkbox"
-              checked={item.isEmjeer}
-              onChange={(e) =>
-                handleInputChange(item.id, "isEmjeer", e.target.checked)
-              }
-            />{" "}
-            Эмжээр
-          </label>
-
-          <label style={{ cursor: "pointer" }}>
-            <input
-              type="checkbox"
-              checked={item.isKhaalga}
-              onChange={(e) =>
-                handleInputChange(item.id, "isKhaalga", e.target.checked)
-              }
-            />{" "}
-            Хаалга
-          </label>
-
-          {/* ИРМЭГҮҮД: У1, У2, Ө1, Ө2 (АНХНААСАА БҮГД ЧЕКЛЭГДСЭН) */}
-          <div
-            style={{
-              display: "flex",
-              gap: "8px",
-              marginLeft: "10px",
-              color: "#2563eb",
-              fontWeight: "500",
-            }}
-          >
-            <label style={{ cursor: "pointer" }}>
-              <input
-                type="checkbox"
-                checked={item.u1}
-                onChange={(e) =>
-                  handleInputChange(item.id, "u1", e.target.checked)
-                }
-              />{" "}
-              У1
-            </label>
-            <label style={{ cursor: "pointer" }}>
-              <input
-                type="checkbox"
-                checked={item.u2}
-                onChange={(e) =>
-                  handleInputChange(item.id, "u2", e.target.checked)
-                }
-              />{" "}
-              У2
-            </label>
-            <label style={{ cursor: "pointer" }}>
-              <input
-                type="checkbox"
-                checked={item.o1}
-                onChange={(e) =>
-                  handleInputChange(item.id, "o1", e.target.checked)
-                }
-              />{" "}
-              Ө1
-            </label>
-            <label style={{ cursor: "pointer" }}>
-              <input
-                type="checkbox"
-                checked={item.o2}
-                onChange={(e) =>
-                  handleInputChange(item.id, "o2", e.target.checked)
-                }
-              />{" "}
-              Ө2
-            </label>
+      details.forEach((item, index) => {
+        const row = document.createElement("div");
+        row.className = "detail-row";
+        row.innerHTML = `
+          <span class="row-index">${index + 1}.</span>
+          <input type="number" style="width:60px;" value="${item.length}" onchange="updateItem(${item.id}, 'length', Number(this.value))"> x
+          <input type="number" style="width:60px;" value="${item.width}" onchange="updateItem(${item.id}, 'width', Number(this.value))"> ->
+          <input type="number" style="width:40px;" value="${item.count}" onchange="updateItem(${item.id}, 'count', Number(this.value))"> ш
+          
+          <label style="margin-left:10px;"><input type="checkbox" ${item.isEmjeer ? 'checked' : ''} onchange="updateItem(${item.id}, 'isEmjeer', this.checked)"> Эмжээр</label>
+          <label><input type="checkbox" ${item.isKhaalga ? 'checked' : ''} onchange="updateItem(${item.id}, 'isKhaalga', this.checked)"> Хаалга</label>
+          
+          <div class="edges-group">
+            <label><input type="checkbox" ${item.u1 ? 'checked' : ''} onchange="updateItem(${item.id}, 'u1', this.checked)"> У1</label>
+            <label><input type="checkbox" ${item.u2 ? 'checked' : ''} onchange="updateItem(${item.id}, 'u2', this.checked)"> У2</label>
+            <label><input type="checkbox" ${item.o1 ? 'checked' : ''} onchange="updateItem(${item.id}, 'o1', this.checked)"> Ө1</label>
+            <label><input type="checkbox" ${item.o2 ? 'checked' : ''} onchange="updateItem(${item.id}, 'o2', this.checked)"> Ө2</label>
           </div>
 
-          {/* Зүсэх хэмжээний мэдээлэл */}
-          <span
-            style={{
-              marginLeft: "auto",
-              backgroundColor: "#fee2e2",
-              color: "#dc2626",
-              padding: "4px 8px",
-              borderRadius: "4px",
-              fontSize: "14px",
-            }}
-          >
-            ✂️ Зүсэх: {item.length}x{item.width}
-          </span>
+          <span class="cut-info">✂️ Зүсэх: ${item.length}x${item.width}</span>
+          ${details.length > 1 ? `<button class="btn-delete" onclick="removeRow(${item.id})">✕</button>` : ''}
+        `;
+        listDiv.appendChild(row);
+      });
+    }
 
-          {/* Мөр устгах товч */}
-          {details.length > 1 && (
-            <button
-              onClick={() => removeRow(item.id)}
-              style={{
-                marginLeft: "8px",
-                color: "red",
-                border: "none",
-                background: "none",
-                cursor: "pointer",
-              }}
-            >
-              ✕
-            </button>
-          )}
-        </div>
-      ))}
+    function addRow() {
+      details.push({
+        id: Date.now(),
+        length: 2775,
+        width: 700,
+        count: 1,
+        isEmjeer: true,
+        isKhaalga: false,
+        u1: true, // Ирмэгүүд бүгд чеклэгдсэнээр нэмэгдэнэ
+        u2: true,
+        o1: true,
+        o2: true
+      });
+      render();
+    }
 
-      {/* Шинэ детал нэмэх товч */}
-      <button
-        onClick={addRow}
-        style={{
-          marginTop: "10px",
-          padding: "8px 16px",
-          backgroundColor: "#2563eb",
-          color: "#fff",
-          border: "none",
-          borderRadius: "4px",
-          cursor: "pointer",
-        }}
-      >
-        + Детал нэмэх
-      </button>
-    </div>
-  );
-}
+    function updateItem(id, field, value) {
+      const item = details.find(d => d.id === id);
+      if (item) {
+        item[field] = value;
+        render();
+      }
+    }
+
+    function removeRow(id) {
+      details = details.filter(d => d.id !== id);
+      render();
+    }
+
+    // Эхний ачаалалт
+    render();
+  </script>
+</body>
+</html>
