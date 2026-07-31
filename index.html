@@ -5,122 +5,213 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AGT Зүсвэр Калькулятор v9.0</title>
   <style>
+    * {
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
     body {
-      font-family: Arial, sans-serif;
+      background-color: #f3f4f6;
+      margin: 0;
       padding: 20px;
-      background-color: #f5f5f5;
     }
-    .container {
-      background: #fff;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    .calculator-card {
+      max-width: 1000px;
+      margin: 0 auto;
+      background: #ffffff;
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     }
-    h2 {
+    .title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #111827;
       margin-top: 0;
+      margin-bottom: 20px;
     }
     .detail-row {
       display: flex;
       align-items: center;
-      gap: 8px;
-      margin-bottom: 10px;
-      background-color: #f9f9f9;
-      padding: 8px 12px;
-      border-radius: 6px;
-      border: 1px solid #eee;
+      gap: 10px;
+      background-color: #f9fafb;
+      border: 1px solid #e5e7eb;
+      padding: 10px 14px;
+      border-radius: 8px;
+      margin-bottom: 12px;
       flex-wrap: wrap;
     }
-    .row-index {
-      font-weight: bold;
+    .row-number {
+      font-weight: 700;
       color: #2563eb;
+      min-width: 24px;
     }
-    input[type="number"] {
-      padding: 4px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
+    .input-box {
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 14px;
+      outline: none;
+    }
+    .input-box:focus {
+      border-color: #2563eb;
+      ring: 2px #2563eb;
+    }
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 14px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .checkbox-label input {
+      cursor: pointer;
+    }
+    .emjeer-khaalga-group {
+      display: flex;
+      gap: 12px;
+      background: #eff6ff;
+      padding: 6px 10px;
+      border-radius: 6px;
+      color: #1d4ed8;
+      font-weight: 500;
     }
     .edges-group {
       display: flex;
-      gap: 8px;
-      margin-left: 10px;
-      color: #2563eb;
-      font-weight: bold;
+      gap: 10px;
+      background: #f0fdf4;
+      padding: 6px 10px;
+      border-radius: 6px;
+      color: #15803d;
+      font-weight: 600;
     }
-    .cut-info {
+    .cut-badge {
       margin-left: auto;
-      background-color: #fee2e2;
+      background-color: #fef2f2;
       color: #dc2626;
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 14px;
+      border: 1px solid #fecaca;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 4px;
     }
     .btn-add {
-      margin-top: 10px;
-      padding: 8px 16px;
       background-color: #2563eb;
-      color: #fff;
+      color: white;
       border: none;
-      border-radius: 4px;
+      padding: 10px 18px;
+      border-radius: 6px;
+      font-weight: 600;
       cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-add:hover {
+      background-color: #1d4ed8;
     }
     .btn-delete {
-      color: red;
+      background: transparent;
       border: none;
-      background: none;
+      color: #ef4444;
+      font-size: 18px;
       cursor: pointer;
-      font-weight: bold;
-      font-size: 16px;
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+    .btn-delete:hover {
+      background-color: #fee2e2;
     }
   </style>
 </head>
 <body>
 
-  <div class="container">
-    <h2>2. "AGT Зүсвэр (2800x1220)" деталууд (v9.0)</h2>
-    <div id="details-list"></div>
-    <button class="btn-add" onclick="addRow()">+ Детал нэмэх</button>
+  <div class="calculator-card">
+    <h2 class="title">2. "AGT Зүсвэр (2800x1220)" деталууд (v9.0)</h2>
+    <div id="details-container"></div>
+    <button class="btn-add" onclick="addNewDetail()">+ Детал нэмэх</button>
   </div>
 
   <script>
-    // v9.0 Анхны төлөв: У1, У2, Ө1, Ө2 ирмэгүүд бүгд чеклэгдсэн (true)
-    let details = [
-      { id: 1, length: 2775, width: 700, count: 1, isEmjeer: true, isKhaalga: false, u1: true, u2: true, o1: true, o2: true }
+    // --- v9.0 АНХНЫ ӨГӨГДӨЛ ---
+    // У1, У2, Ө1, Ө2 ИРМЭГҮҮД БҮГД ЧЕКЛЭГДСЭН (true) БАЙНА
+    let detailsList = [
+      {
+        id: Date.now(),
+        length: 2775,
+        width: 700,
+        count: 1,
+        isEmjeer: true,
+        isKhaalga: false,
+        u1: true, // Сонгогдсон
+        u2: true, // Сонгогдсон
+        o1: true, // Сонгогдсон
+        o2: true  // Сонгогдсон
+      }
     ];
 
-    function render() {
-      const listDiv = document.getElementById("details-list");
-      listDiv.innerHTML = "";
+    // Дэлгэц дээр деталуудыг зурах (Render) функц
+    function renderDetails() {
+      const container = document.getElementById("details-container");
+      container.innerHTML = "";
 
-      details.forEach((item, index) => {
-        const row = document.createElement("div");
-        row.className = "detail-row";
-        row.innerHTML = `
-          <span class="row-index">${index + 1}.</span>
-          <input type="number" style="width:60px;" value="${item.length}" onchange="updateItem(${item.id}, 'length', Number(this.value))"> x
-          <input type="number" style="width:60px;" value="${item.width}" onchange="updateItem(${item.id}, 'width', Number(this.value))"> ->
-          <input type="number" style="width:40px;" value="${item.count}" onchange="updateItem(${item.id}, 'count', Number(this.value))"> ш
+      detailsList.forEach((item, index) => {
+        const rowDiv = document.createElement("div");
+        rowDiv.className = "detail-row";
+
+        rowDiv.innerHTML = `
+          <span class="row-number">${index + 1}.</span>
           
-          <label style="margin-left:10px;"><input type="checkbox" ${item.isEmjeer ? 'checked' : ''} onchange="updateItem(${item.id}, 'isEmjeer', this.checked)"> Эмжээр</label>
-          <label><input type="checkbox" ${item.isKhaalga ? 'checked' : ''} onchange="updateItem(${item.id}, 'isKhaalga', this.checked)"> Хаалга</label>
-          
-          <!-- ИРМЭГҮҮД: У1, У2, Ө1, Ө2 Бүгд чеклэгдэж орж ирнэ -->
-          <div class="edges-group">
-            <label><input type="checkbox" ${item.u1 ? 'checked' : ''} onchange="updateItem(${item.id}, 'u1', this.checked)"> У1</label>
-            <label><input type="checkbox" ${item.u2 ? 'checked' : ''} onchange="updateItem(${item.id}, 'u2', this.checked)"> У2</label>
-            <label><input type="checkbox" ${item.o1 ? 'checked' : ''} onchange="updateItem(${item.id}, 'o1', this.checked)"> Ө1</label>
-            <label><input type="checkbox" ${item.o2 ? 'checked' : ''} onchange="updateItem(${item.id}, 'o2', this.checked)"> Ө2</label>
+          <input type="number" class="input-box" style="width: 70px;" value="${item.length}" onchange="updateValue(${item.id}, 'length', Number(this.value))" placeholder="Урт">
+          <span>x</span>
+          <input type="number" class="input-box" style="width: 70px;" value="${item.width}" onchange="updateValue(${item.id}, 'width', Number(this.value))" placeholder="Өргөн">
+          <span>-></span>
+          <input type="number" class="input-box" style="width: 50px;" value="${item.count}" onchange="updateValue(${item.id}, 'count', Number(this.value))" placeholder="Тоо">
+          <span>ш</span>
+
+          <!-- Эмжээр & Хаалга тохиргоо -->
+          <div class="emjeer-khaalga-group">
+            <label class="checkbox-label">
+              <input type="checkbox" ${item.isEmjeer ? 'checked' : ''} onchange="updateValue(${item.id}, 'isEmjeer', this.checked)"> Эмжээр
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" ${item.isKhaalga ? 'checked' : ''} onchange="updateValue(${item.id}, 'isKhaalga', this.checked)"> Хаалга
+            </label>
           </div>
 
-          <span class="cut-info">✂️ Зүсэх: ${item.length}x${item.width}</span>
-          ${details.length > 1 ? `<button class="btn-delete" onclick="removeRow(${item.id})">✕</button>` : ''}
+          <!-- ИРМЭГҮҮД (У1, У2, Ө1, Ө2) - АНХНААСАА БҮГД ЧЕКЛЭГДСЭН -->
+          <div class="edges-group">
+            <label class="checkbox-label">
+              <input type="checkbox" ${item.u1 ? 'checked' : ''} onchange="updateValue(${item.id}, 'u1', this.checked)"> У1
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" ${item.u2 ? 'checked' : ''} onchange="updateValue(${item.id}, 'u2', this.checked)"> У2
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" ${item.o1 ? 'checked' : ''} onchange="updateValue(${item.id}, 'o1', this.checked)"> Ө1
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" ${item.o2 ? 'checked' : ''} onchange="updateValue(${item.id}, 'o2', this.checked)"> Ө2
+            </label>
+          </div>
+
+          <!-- Зүсэх хэмжээний мэдээлэл -->
+          <div class="cut-badge">
+            ✂️ Зүсэх: ${item.length}x${item.width}
+          </div>
+
+          <!-- Устгах товч -->
+          ${detailsList.length > 1 ? `<button class="btn-delete" onclick="deleteDetail(${item.id})" title="Устгах">✕</button>` : ''}
         `;
-        listDiv.appendChild(row);
+
+        container.appendChild(rowDiv);
       });
     }
 
-    // Шинэ детал нэмэхэд ирмэгүүд нь автоматаар чеклэгдсэн байна
-    function addRow() {
-      details.push({
+    // Шинэ детал нэмэх (Ирмэгүүд нь автоматаар чеклэгдэж нэмэгдэнэ)
+    function addNewDetail() {
+      detailsList.push({
         id: Date.now(),
         length: 2775,
         width: 700,
@@ -132,23 +223,26 @@
         o1: true,
         o2: true
       });
-      render();
+      renderDetails();
     }
 
-    function updateItem(id, field, value) {
-      const item = details.find(d => d.id === id);
+    // Утга шинэчлэх функц
+    function updateValue(id, field, value) {
+      const item = detailsList.find(d => d.id === id);
       if (item) {
         item[field] = value;
-        render();
+        renderDetails();
       }
     }
 
-    function removeRow(id) {
-      details = details.filter(d => d.id !== id);
-      render();
+    // Детал устгах
+    function deleteDetail(id) {
+      detailsList = detailsList.filter(d => d.id !== id);
+      renderDetails();
     }
 
-    render();
+    // Хуудас ачаалагдахад ажиллуулах
+    renderDetails();
   </script>
 </body>
 </html>
