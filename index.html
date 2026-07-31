@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MaxCut v10.1 GUILLOTINE ENGINE - Шулуун Зүсэлт & Төрөл</title>
+  <title>MaxCut v10.2 GUILLOTINE ENGINE - Шулуун Зүсэлт & Төрөл</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
@@ -67,7 +67,7 @@
 </head>
 <body>
 
-  <h2>✂️ MaxCut v10.1 GUILLOTINE ENGINE (БҮРЭН ШУЛУУН ЗҮСЭЛТ)</h2>
+  <h2>✂️ MaxCut v10.2 GUILLOTINE ENGINE (БҮРЭН ШУЛУУН ЗҮСЭЛТ)</h2>
 
   <div class="sticky-header-container">
     <div class="card" style="margin-bottom: 0;">
@@ -235,7 +235,10 @@
     let activeTabId = null;
 
     function initData() {
-      const savedSheets = localStorage.getItem('cut_sheets_v10_1');
+      // Өмнөх бүх хувилбаруудын хадгалсан түлхүүрүүдээс шалгаж сэргээх
+      const savedSheets = localStorage.getItem('cut_sheets_v10_2') || 
+                          localStorage.getItem('cut_sheets_v10_1') || 
+                          localStorage.getItem('cut_sheets_v10_0');
       if (savedSheets) {
         try { sheetsData = JSON.parse(savedSheets); } catch(e) { sheetsData = null; }
       } 
@@ -255,13 +258,12 @@
 
     function autoSave() {
       saveCurrentTabFieldsStateOnly();
-      localStorage.setItem('cut_sheets_v10_1', JSON.stringify(sheetsData));
+      localStorage.setItem('cut_sheets_v10_2', JSON.stringify(sheetsData));
     }
 
     function autoSaveAndRefreshLive() {
       autoSave();
       updateCutDisplayLabelsOnly();
-      // Зүсэлтийн төрөл эсвэл параметр өөрчлөгдөхөд гарсан үр дүнг автоматаар шинэчлэнэ
       if(document.getElementById('sheetsContainer').innerHTML !== "") {
         calculateNesting();
       }
