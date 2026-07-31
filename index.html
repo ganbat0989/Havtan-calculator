@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MaxCut v9.0 MAXRECTS ENGINE - 2800x1220 (5 Sheet Optimized)</title>
+  <title>MaxCut v10.0 GUILLOTINE ENGINE - Шулуун Зүсэлт</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
@@ -65,7 +65,7 @@
 </head>
 <body>
 
-  <h2>🔥 MaxCut v9.0 MAXRECTS ENGINE (2800x1220 - 5 Хавтан Төгс Өрөлт)</h2>
+  <h2>✂️ MaxCut v10.0 GUILLOTINE ENGINE (БҮРЭН ШУЛУУН ЗҮСЭЛТ)</h2>
 
   <div class="sticky-header-container">
     <div class="card" style="margin-bottom: 0;">
@@ -118,8 +118,8 @@
 
   <div class="card" style="margin-top: 15px;">
     <div class="parts-header-actions">
-      <h3 id="parts-header-title">2. Зүсэх деталь хэсгүүд (AGT Зүсвэр)</h3>
-      <button class="btn-excel-tab" onclick="document.getElementById('excelFileInput').click()">📊 Өөр Excel файл оруулж ирэх</button>
+      <h3 id="parts-header-title">2. Зүсэх деталь хэсгүүд</h3>
+      <button class="btn-excel-tab" onclick="document.getElementById('excelFileInput').click()">📊 Excel файл оруулж ирэх</button>
       <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" style="display:none;" onchange="importExcelFileForCurrentTab(event)">
     </div>
 
@@ -127,7 +127,7 @@
     <button class="btn-add" onclick="addPartInput()">+ Шинэ деталь нэмэх</button>
   </div>
 
-  <button class="main-btn" onclick="calculateNesting()">⚡ MAXRECTS ТӨГС ӨРӨЛТ ТООЦООЛОХ (5 ХАВТАНД БАГТААХ)</button>
+  <button class="main-btn" onclick="calculateNesting()">✂️ ШУЛУУН ЗҮСЭЛТЭЭР ӨРӨХ (GUILLOTINE OPTIMIZATION)</button>
 
   <div class="card canvas-container" style="margin-top: 20px;">
     <h3 id="result-header-title">3. Зүсэлтийн зураглал</h3>
@@ -139,7 +139,6 @@
   </div>
 
   <script>
-    // Initial dataset pre-loaded directly from AGT зүсвэр.xlsx (eU1, eU2, eO1, eO2 = true by default)
     const agtDefaultParts = [
       { w: 2775, h: 700, count: 1, eU1: true, eU2: true, eO1: true, eO2: true },
       { w: 2775, h: 350, count: 1, eU1: true, eU2: true, eO1: true, eO2: true },
@@ -184,39 +183,27 @@
     let activeTabId = null;
 
     function initData() {
-      const savedSheets = localStorage.getItem('cut_sheets_v9_0');
-
+      const savedSheets = localStorage.getItem('cut_sheets_v10_0');
       if (savedSheets) {
-        try {
-          sheetsData = JSON.parse(savedSheets);
-        } catch(e) {
-          sheetsData = null;
-        }
+        try { sheetsData = JSON.parse(savedSheets); } catch(e) { sheetsData = null; }
       } 
-      
       if (!sheetsData || sheetsData.length === 0) {
         sheetsData = [
           { 
             id: 1, 
             name: "AGT Зүсвэр (2800х1220)", 
-            w: 2800, 
-            h: 1220, 
-            count: 5, 
-            kerf: 4,
-            edge: 0,
-            doorGap: 0,
+            w: 2800, h: 1220, count: 5, kerf: 4, edge: 0, doorGap: 0,
             parts: JSON.parse(JSON.stringify(agtDefaultParts))
           }
         ];
       }
-
       activeTabId = sheetsData[0].id;
       renderTabs();
     }
 
     function autoSave() {
       saveCurrentTabFieldsStateOnly();
-      localStorage.setItem('cut_sheets_v9_0', JSON.stringify(sheetsData));
+      localStorage.setItem('cut_sheets_v10_0', JSON.stringify(sheetsData));
     }
 
     function autoSaveAndRefreshLive() {
@@ -267,7 +254,6 @@
     function renderTabs() {
       const header = document.getElementById('tabsHeader');
       header.innerHTML = "";
-
       sheetsData.forEach(s => {
         const btn = document.createElement('button');
         btn.className = `tab-btn ${s.id === activeTabId ? 'active' : ''}`;
@@ -275,7 +261,6 @@
         btn.onclick = () => switchTab(s.id);
         header.appendChild(btn);
       });
-
       const addBtn = document.createElement('button');
       addBtn.className = 'tab-add-btn';
       addBtn.innerText = "+ Шинэ хавтан";
@@ -310,7 +295,7 @@
         document.getElementById('doorGap').value = current.doorGap !== undefined ? current.doorGap : 0;
 
         document.getElementById('parts-header-title').innerText = `2. "${current.name}" деталууд`;
-        document.getElementById('result-header-title').innerText = `3. "${current.name}" зүсэлтийн зураглал`;
+        document.getElementById('result-header-title').innerText = `3. "${current.name}" шулуун зүсэлтийн зураглал`;
 
         renderParts(current.parts || []);
       }
@@ -342,7 +327,6 @@
             <label><input type="checkbox" class="doorMinusH" ${p.doorMinusH ? 'checked' : ''} onchange="onPartInputChanged()"> Өргөн</label>
           </div>
 
-          <!-- ИРМЭГҮҮД: У1, У2, Ө1, Ө2 БҮГД ЧЕКЛЭГДЭЖ ОРЖ ИРНЭ -->
           <div class="edge-selectors" id="edgeBox_${idx}" style="display: ${p.hasEdge !== false ? 'flex' : 'none'};">
             <label><input type="checkbox" class="eU1" ${p.eU1 !== false ? 'checked' : ''} onchange="onPartInputChanged()"> У1</label>
             <label><input type="checkbox" class="eU2" ${p.eU2 !== false ? 'checked' : ''} onchange="onPartInputChanged()"> У2</label>
@@ -351,7 +335,6 @@
           </div>
 
           <div class="cut-size-display" id="cutDisplay_${idx}">✂️ Зүсэх: ${p.w}x${p.h}</div>
-
           <button class="btn-remove-item" onclick="removePart(${idx})">✕</button>
         `;
         container.appendChild(div);
@@ -380,7 +363,6 @@
     function updateCutDisplayLabelsOnly() {
       const edgeThickness = parseFloat(document.getElementById('edgeVal').value) || 0;
       const doorGapVal = parseFloat(document.getElementById('doorGap').value) || 0;
-      
       const partRows = document.querySelectorAll('.part-item');
       let partsTemp = [];
 
@@ -413,7 +395,6 @@
 
         const displayEl = document.getElementById(`cutDisplay_${idx}`);
         if(displayEl) displayEl.innerText = `✂️ Зүсэх: ${cutW}x${cutH}`;
-
         partsTemp.push({ count: count });
       });
 
@@ -424,15 +405,8 @@
       autoSave();
       const newId = Date.now();
       sheetsData.push({
-        id: newId,
-        name: `Хавтан ${sheetsData.length + 1}`,
-        w: 2800,
-        h: 1220,
-        count: 5,
-        kerf: 4,
-        edge: 0,
-        doorGap: 0,
-        parts: []
+        id: newId, name: `Хавтан ${sheetsData.length + 1}`,
+        w: 2800, h: 1220, count: 5, kerf: 4, edge: 0, doorGap: 0, parts: []
       });
       activeTabId = newId;
       renderTabs();
@@ -457,7 +431,6 @@
       const current = sheetsData.find(s => s.id === activeTabId);
       if (current) {
         if (!current.parts) current.parts = [];
-        // Шинэ деталь дээр ирмэгүүд бүгд true (чеклэгдсэн)
         current.parts.push({ 
           w: '', h: '', count: 1, 
           hasEdge: true, isDoor: false, doorMinusW: false, doorMinusH: false, 
@@ -524,8 +497,8 @@
       reader.readAsArrayBuffer(file);
     }
 
-    // --- MAXRECTS MAXIMAL FREE RECTANGLES ALGORITHM ENGINE ---
-    class MaxRectsBinPack {
+    // --- GUILLOTINE BIN PACKING ENGINE (STRICT FULL STRAIGHT CUTS) ---
+    class GuillotineBinPack {
       constructor(width, height, kerf = 4) {
         this.binWidth = width;
         this.binHeight = height;
@@ -534,121 +507,79 @@
         this.freeRectangles = [{ x: 0, y: 0, w: width, h: height }];
       }
 
-      insert(width, height, method = 'BestShortSideFit') {
-        let bestNode = { x: 0, y: 0, w: 0, h: 0, rot: false };
-        let bestShortSideFit = Infinity;
-        let bestAreaFit = Infinity;
+      insert(width, height) {
+        let bestScore = Infinity;
+        let bestIndex = -1;
+        let bestRotated = false;
 
         for (let i = 0; i < this.freeRectangles.length; i++) {
           let free = this.freeRectangles[i];
 
-          // 1. Non-rotated
+          // Check non-rotated
           if (free.w >= width && free.h >= height) {
-            let leftoverHoriz = Math.abs(free.w - width);
-            let leftoverVert = Math.abs(free.h - height);
-            let shortSide = Math.min(leftoverHoriz, leftoverVert);
-            let areaFit = free.w * free.h - width * height;
-
-            if (method === 'BestShortSideFit' && shortSide < bestShortSideFit) {
-              bestNode = { x: free.x, y: free.y, w: width, h: height, rot: false };
-              bestShortSideFit = shortSide;
-            } else if (method === 'BestAreaFit' && areaFit < bestAreaFit) {
-              bestNode = { x: free.x, y: free.y, w: width, h: height, rot: false };
-              bestAreaFit = areaFit;
+            let leftoverHoriz = free.w - width;
+            let leftoverVert = free.h - height;
+            let score = Math.min(leftoverHoriz, leftoverVert);
+            if (score < bestScore) {
+              bestScore = score;
+              bestIndex = i;
+              bestRotated = false;
             }
           }
 
-          // 2. Rotated
+          // Check rotated
           if (free.w >= height && free.h >= width) {
-            let leftoverHoriz = Math.abs(free.w - height);
-            let leftoverVert = Math.abs(free.h - width);
-            let shortSide = Math.min(leftoverHoriz, leftoverVert);
-            let areaFit = free.w * free.h - width * height;
-
-            if (method === 'BestShortSideFit' && shortSide < bestShortSideFit) {
-              bestNode = { x: free.x, y: free.y, w: height, h: width, rot: true };
-              bestShortSideFit = shortSide;
-            } else if (method === 'BestAreaFit' && areaFit < bestAreaFit) {
-              bestNode = { x: free.x, y: free.y, w: height, h: width, rot: true };
-              bestAreaFit = areaFit;
+            let leftoverHoriz = free.w - height;
+            let leftoverVert = free.h - width;
+            let score = Math.min(leftoverHoriz, leftoverVert);
+            if (score < bestScore) {
+              bestScore = score;
+              bestIndex = i;
+              bestRotated = true;
             }
           }
         }
 
-        if (bestNode.w === 0) return null;
+        if (bestIndex === -1) return null;
 
-        this.placeRectangle(bestNode);
-        return bestNode;
+        let free = this.freeRectangles[bestIndex];
+        let w = bestRotated ? height : width;
+        let h = bestRotated ? width : height;
+
+        let node = { x: free.x, y: free.y, w: w, h: h, rot: bestRotated };
+
+        this.freeRectangles.splice(bestIndex, 1);
+        this.splitFreeRectGuillotine(free, node);
+        this.usedRectangles.push(node);
+
+        return node;
       }
 
-      placeRectangle(node) {
-        let numFreeRectangles = this.freeRectangles.length;
-        let i = 0;
+      splitFreeRectGuillotine(free, node) {
         let w_eff = node.w + this.kerf;
         let h_eff = node.h + this.kerf;
 
-        while (i < numFreeRectangles) {
-          if (this.splitFreeNode(this.freeRectangles[i], node, w_eff, h_eff)) {
-            this.freeRectangles.splice(i, 1);
-            numFreeRectangles--;
-          } else {
-            i++;
+        let rightWidth = free.w - w_eff;
+        let topHeight = free.h - h_eff;
+
+        // Split choice: Sorter Axis Split to keep larger contiguous pieces for straight cuts
+        if (rightWidth < topHeight) {
+          // Horizontal straight line cut first
+          if (rightWidth > 0) {
+            this.freeRectangles.push({ x: free.x + w_eff, y: free.y, w: rightWidth, h: node.h });
+          }
+          if (topHeight > 0) {
+            this.freeRectangles.push({ x: free.x, y: free.y + h_eff, w: free.w, h: topHeight });
+          }
+        } else {
+          // Vertical straight line cut first
+          if (topHeight > 0) {
+            this.freeRectangles.push({ x: free.x, y: free.y + h_eff, w: node.w, h: topHeight });
+          }
+          if (rightWidth > 0) {
+            this.freeRectangles.push({ x: free.x + w_eff, y: free.y, w: rightWidth, h: free.h });
           }
         }
-
-        this.pruneFreeList();
-        this.usedRectangles.push(node);
-      }
-
-      splitFreeNode(free, node, w_eff, h_eff) {
-        if (node.x >= free.x + free.w || node.x + w_eff <= free.x ||
-            node.y >= free.y + free.h || node.y + h_eff <= free.y) {
-          return false;
-        }
-
-        if (node.y > free.y && node.y < free.y + free.h) {
-          let newNode = Object.assign({}, free, { h: node.y - free.y });
-          this.freeRectangles.push(newNode);
-        }
-
-        if (node.y + h_eff < free.y + free.h) {
-          let newNode = Object.assign({}, free, { y: node.y + h_eff, h: free.y + free.h - (node.y + h_eff) });
-          this.freeRectangles.push(newNode);
-        }
-
-        if (node.x > free.x && node.x < free.x + free.w) {
-          let newNode = Object.assign({}, free, { w: node.x - free.x });
-          this.freeRectangles.push(newNode);
-        }
-
-        if (node.x + w_eff < free.x + free.w) {
-          let newNode = Object.assign({}, free, { x: node.x + w_eff, w: free.x + free.w - (node.x + w_eff) });
-          this.freeRectangles.push(newNode);
-        }
-
-        return true;
-      }
-
-      pruneFreeList() {
-        for (let i = 0; i < this.freeRectangles.length; i++) {
-          for (let j = i + 1; j < this.freeRectangles.length; j++) {
-            if (this.isContainedIn(this.freeRectangles[i], this.freeRectangles[j])) {
-              this.freeRectangles.splice(i, 1);
-              i--;
-              break;
-            }
-            if (this.isContainedIn(this.freeRectangles[j], this.freeRectangles[i])) {
-              this.freeRectangles.splice(j, 1);
-              j--;
-            }
-          }
-        }
-      }
-
-      isContainedIn(a, b) {
-        return a.x >= b.x && a.y >= b.y &&
-               a.x + a.w <= b.x + b.w &&
-               a.y + a.h <= b.y + b.h;
       }
     }
 
@@ -702,17 +633,17 @@
         return;
       }
 
-      // Order parts by Area then Max Dimension descending
-      basePartsList.sort((a, b) => (b.area - a.area) || (Math.max(b.w, b.h) - Math.max(a.w, a.h)));
+      // Sort by Max Dimension and Area descending for ideal Guillotine Strip allocation
+      basePartsList.sort((a, b) => (Math.max(b.w, b.h) - Math.max(a.w, a.h)) || (b.area - a.area));
 
       let bins = [];
       let unplaced = [];
 
       basePartsList.forEach(p => {
         let placed = false;
-        // Try inside existing bins
+
         for (let b of bins) {
-          let node = b.insert(p.w, p.h, 'BestShortSideFit');
+          let node = b.insert(p.w, p.h);
           if (node) {
             node.label = p.label;
             placed = true;
@@ -722,8 +653,8 @@
 
         if (!placed) {
           if (bins.length < maxSheets) {
-            let newBin = new MaxRectsBinPack(sheetW, sheetH, kerf);
-            let node = newBin.insert(p.w, p.h, 'BestShortSideFit');
+            let newBin = new GuillotineBinPack(sheetW, sheetH, kerf);
+            let node = newBin.insert(p.w, p.h);
             if (node) {
               node.label = p.label;
               bins.push(newBin);
@@ -756,14 +687,14 @@
         statusDiv.className = "status-msg status-error";
         let badgesHtml = unplaced.map(p => `<span class="unplaced-badge">⚠️ ${p.label}</span>`).join(" ");
         statusDiv.innerHTML = `
-          <div>⚠️ <b>АНХААР:</b> Нийт <b>${unplaced.length}</b> деталь багталгүй үлдлээ! (Хавтангийн тоог нэмнэ үү)</div>
-          <div>📊 Ашиглалт: <b>${effPercent}%</b> | Нийт хаягдал: <b>${wastePercent}%</b></div>
-          <div style="margin-top:8px;"><b>Үлдсэн деталууд:</b></div>
+          <div>⚠️ <b>АНХААР:</b> Шулуун зүсэлтийн горимоор нийт <b>${unplaced.length}</b> деталь багталгүй үлдлээ! (Хавтангийн тоог нэмнэ үү)</div>
+          <div>📊 Шулуун ашиглалт: <b>${effPercent}%</b> | Хаягдал: <b>${wastePercent}%</b></div>
+          <div style="margin-top:8px;"><b>Багтаагүй деталууд:</b></div>
           <div class="unplaced-box">${badgesHtml}</div>
         `;
       } else {
         statusDiv.className = "status-msg status-success";
-        statusDiv.innerHTML = `🎉 <b>MAXRECTS ТӨГС ОПТИМИЗАЦИ БОЛЛОО!</b> <br>Нийт ${basePartsList.length} деталь ердөө <b>${bins.length} хавтанд (2800х1220) 100% БҮРЭН БАГТЛАА</b>. <br>📊 Хавтангийн Нийт Ашиглалт: <b>${effPercent}%</b> | Хаягдал (Wastage): <b>${wastePercent}%</b>`;
+        statusDiv.innerHTML = `✂️ <b>GUILLOTINE БҮРЭН ШУЛУУН ЗҮСЭЛТ АМЖИЛТТАЙ БОЛЛОО!</b> <br>Нийт ${basePartsList.length} деталь <b>${bins.length} хавтанд 100% ШУЛУУН ДАЙРЧ ЗҮСЭХ БОЛОМЖТОЙГООР</b> багтлаа. <br>📊 Хавтангийн Ашиглалт: <b>${effPercent}%</b> | Хаягдал (Wastage): <b>${wastePercent}%</b>`;
       }
 
       document.getElementById('pdfBtn').style.display = "block";
@@ -784,7 +715,7 @@
       headerDiv.className = 'sheet-header-info';
       headerDiv.innerHTML = `
         <span>Хавтан ${sheetIndex} / ${totalSheets} - ${sheetName} (${sheetW} mm x ${sheetH} mm)</span>
-        <span>Деталь: ${placedParts.length} ш | Хавтангийн Ашиглалт: <b>${effPct}%</b> (Хаягдал: <b>${wastePct}%</b>)</span>
+        <span>Деталь: ${placedParts.length} ш | Шулуун Ашиглалт: <b>${effPct}%</b> (Хаягдал: <b>${wastePct}%</b>)</span>
       `;
       wrapper.appendChild(headerDiv);
 
@@ -801,7 +732,6 @@
       ctx.fillStyle = "#e0e0e0";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Color palette for parts
       const colors = ["#1a73e8", "#34a853", "#fbbc05", "#ea4335", "#9c27b0", "#00bcd4", "#ff9800", "#795548"];
 
       placedParts.forEach((p, idx) => {
@@ -810,20 +740,16 @@
         const pw = p.w * scale;
         const ph = p.h * scale;
 
-        // Fill part background
         ctx.fillStyle = "#ffffff";
         ctx.fillRect(px, py, pw, ph);
 
-        // Border
         ctx.strokeStyle = colors[idx % colors.length];
         ctx.lineWidth = 2;
         ctx.strokeRect(px, py, pw, ph);
 
-        // Fill subtle color
-        ctx.fillStyle = colors[idx % colors.length] + "22"; // opacity
+        ctx.fillStyle = colors[idx % colors.length] + "22";
         ctx.fillRect(px, py, pw, ph);
 
-        // Label
         ctx.fillStyle = "#202124";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
