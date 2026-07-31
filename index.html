@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Хавтан Зүсэлт Тооцоолуур Pro v3.6</title>
+  <title>Хавтан Зүсэлт Тооцоолуур Pro v3.7</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
@@ -64,7 +64,7 @@
 </head>
 <body>
 
-  <h2>✂️ Хавтан Өрөлтийн Тооцоолуур Pro <span style="font-size: 14px; color: #1a73e8; font-weight: normal;">v3.6 Дарааллаар Шахагч</span></h2>
+  <h2>✂️ Хавтан Өрөлтийн Тооцоолуур Pro <span style="font-size: 14px; color: #1a73e8; font-weight: normal;">v3.7 Бага Хогдолтой Дарааллагч</span></h2>
 
   <div class="sticky-header-container">
     <div class="card" style="margin-bottom: 0;">
@@ -126,7 +126,7 @@
     <button class="btn-add" onclick="addPartInput()">+ Шинэ деталь нэмэх</button>
   </div>
 
-  <button class="main-btn" onclick="calculateNesting()">🧮 Оруулсан Дарааллаар Өрөх</button>
+  <button class="main-btn" onclick="calculateNesting()">🧮 Хогдол Багатай Дарааллаар Өрөх</button>
 
   <div class="card canvas-container" style="margin-top: 20px;">
     <h3 id="result-header-title">3. Зүсэлтийн зураглал</h3>
@@ -142,9 +142,9 @@
     let activeTabId = null;
 
     function initData() {
-      const savedSheets = localStorage.getItem('cut_sheets_v3_6') || 
-                          localStorage.getItem('cut_sheets_v3_5') || 
-                          localStorage.getItem('cut_sheets_v3_4');
+      const savedSheets = localStorage.getItem('cut_sheets_v3_7') || 
+                          localStorage.getItem('cut_sheets_v3_6') || 
+                          localStorage.getItem('cut_sheets_v3_5');
 
       if (savedSheets) {
         try {
@@ -176,7 +176,7 @@
 
     function autoSave() {
       saveCurrentTabFieldsStateOnly();
-      localStorage.setItem('cut_sheets_v3_6', JSON.stringify(sheetsData));
+      localStorage.setItem('cut_sheets_v3_7', JSON.stringify(sheetsData));
     }
 
     function autoSaveAndRefreshLive() {
@@ -524,6 +524,7 @@
               idx: partIdx,
               w: cutW, 
               h: cutH, 
+              originalOrder: basePartsList.length,
               label: `#${partIdx} (${cutW}x${cutH})` 
             });
           }
@@ -531,8 +532,8 @@
         }
       });
 
-      // User Input Order Preserved (Хэрэглэгчийн оруулсан дарааллаар яг хэвээр нь шахна)
-      let bestResult = runOptimizedGuillotineEngine(basePartsList, sheetW, sheetH, kerf, maxSheets);
+      // Best-Fit + Sequence Priority Hybrid Engine (Хавтан тус бүрийн хогдлыг багасгаж, дарааллыг хадгална)
+      let bestResult = runLowestWasteOrderedEngine(basePartsList, sheetW, sheetH, kerf, maxSheets);
 
       bestResult.sheets.forEach((placedParts, idx) => {
         renderSingleSheetCanvas(currentSheet.name, sheetW, sheetH, placedParts, idx + 1);
@@ -551,13 +552,13 @@
         `;
       } else {
         statusDiv.className = "status-msg status-success";
-        statusDiv.innerText = `🎉 АМЖИЛТТАЙ! Бүх ${basePartsList.length} деталь таны оруулсан дарааллаар ЯГ ${bestResult.sheets.length} ХАВТАНД БАГТЛАА!`;
+        statusDiv.innerText = `🎉 АМЖИЛТТАЙ! Бүх ${basePartsList.length} деталь хогдол багатай байдлаар ЯГ ${bestResult.sheets.length} ХАВТАНД БАГТЛАА!`;
       }
 
       document.getElementById('pdfBtn').style.display = "block";
     }
 
-    function runOptimizedGuillotineEngine(partsList, sheetW, sheetH, kerf, maxSheets) {
+    function runLowestWasteOrderedEngine(partsList, sheetW, sheetH, kerf, maxSheets) {
       let remaining = [...partsList];
       let sheets = [];
 
@@ -571,16 +572,19 @@
           let bestFitNode = null;
           let bestNodeIdx = -1;
           let bestRotated = false;
-          let minScore = Infinity;
+          let minWasteScore = Infinity;
 
-          // Search available slots following input order priority
+          // Find slots that leave minimal leftover space (Best-Fit waste reduction) + slight preference for input order
           for (let n = 0; n < freeNodes.length; n++) {
             let node = freeNodes[n];
 
             if (part.w <= node.w && part.h <= node.h) {
-              let score = node.y * 10000 + node.x; // Prioritize top-left fitting to maintain clean sequence layout
-              if (score < minScore) {
-                minScore = score;
+              let wasteW = node.w - part.w;
+              let wasteH = node.h - part.h;
+              let wasteScore = (wasteW * wasteH) * 0.7 + (node.y * 5) + (node.x * 0.1) + (part.originalOrder * 0.01);
+              
+              if (wasteScore < minWasteScore) {
+                minWasteScore = wasteScore;
                 bestFitNode = node;
                 bestNodeIdx = n;
                 bestRotated = false;
@@ -588,9 +592,12 @@
             }
 
             if (part.h <= node.w && part.w <= node.h) {
-              let score = node.y * 10000 + node.x;
-              if (score < minScore) {
-                minScore = score;
+              let wasteW = node.w - part.h;
+              let wasteH = node.h - part.w;
+              let wasteScore = (wasteW * wasteH) * 0.7 + (node.y * 5) + (node.x * 0.1) + (part.originalOrder * 0.01);
+              
+              if (wasteScore < minWasteScore) {
+                minWasteScore = wasteScore;
                 bestFitNode = node;
                 bestNodeIdx = n;
                 bestRotated = true;
@@ -623,7 +630,7 @@
             }
 
             remaining.splice(i, 1);
-            i = 0; // Restart scanning remaining items from the top of the input list for the next placement
+            i = 0; 
           } else {
             i++;
           }
