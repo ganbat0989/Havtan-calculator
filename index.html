@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Хавтан Зүсэлт Тооцоолуур Pro v3.14 (MaxCut Style)</title>
+  <title>MaxCut Алгоритмтай Хавтан Зүсэлт v4.0</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
@@ -64,7 +64,7 @@
 </head>
 <body>
 
-  <h2>✂️ Хавтан Өрөлтийн Тооцоолуур Pro <span style="font-size: 14px; color: #1a73e8; font-weight: normal;">v3.14</span></h2>
+  <h2>✂️ MaxCut Логик бүхий Хавтан Зүсэлт <span style="font-size: 14px; color: #1a73e8; font-weight: normal;">v4.0</span></h2>
 
   <div class="sticky-header-container">
     <div class="card" style="margin-bottom: 0;">
@@ -142,8 +142,7 @@
     let activeTabId = null;
 
     function initData() {
-      const savedSheets = localStorage.getItem('cut_sheets_v3_14') ||
-                          localStorage.getItem('cut_sheets_v3_13');
+      const savedSheets = localStorage.getItem('cut_sheets_v4_0') || localStorage.getItem('cut_sheets_v3_14');
 
       if (savedSheets) {
         try {
@@ -175,7 +174,7 @@
 
     function autoSave() {
       saveCurrentTabFieldsStateOnly();
-      localStorage.setItem('cut_sheets_v3_14', JSON.stringify(sheetsData));
+      localStorage.setItem('cut_sheets_v4_0', JSON.stringify(sheetsData));
     }
 
     function autoSaveAndRefreshLive() {
@@ -331,17 +330,13 @@
 
     function toggleEdgeUI(idx, isChecked) {
       const edgeBox = document.getElementById(`edgeBox_${idx}`);
-      if (edgeBox) {
-        edgeBox.style.display = isChecked ? 'flex' : 'none';
-      }
+      if (edgeBox) edgeBox.style.display = isChecked ? 'flex' : 'none';
       onPartInputChanged();
     }
 
     function toggleDoorUI(idx, isChecked) {
       const doorAxisBox = document.getElementById(`doorAxisBox_${idx}`);
-      if (doorAxisBox) {
-        doorAxisBox.style.display = isChecked ? 'flex' : 'none';
-      }
+      if (doorAxisBox) doorAxisBox.style.display = isChecked ? 'flex' : 'none';
       onPartInputChanged();
     }
 
@@ -385,9 +380,7 @@
         }
 
         const displayEl = document.getElementById(`cutDisplay_${idx}`);
-        if(displayEl) {
-          displayEl.innerText = `✂️ Зүсэх: ${cutW}x${cutH}`;
-        }
+        if(displayEl) displayEl.innerText = `✂️ Зүсэх: ${cutW}x${cutH}`;
 
         partsTemp.push({ count: count });
       });
@@ -468,17 +461,9 @@
               let count = parseInt(row[2]) || 1;
               if (!isNaN(w) && !isNaN(h) && w > 0 && h > 0) {
                 importedParts.push({ 
-                  w: w, 
-                  h: h, 
-                  count: count, 
-                  hasEdge: true, 
-                  isDoor: false, 
-                  doorMinusW: false, 
-                  doorMinusH: false, 
-                  eU1: true, 
-                  eU2: true, 
-                  eO1: true, 
-                  eO2: true 
+                  w: w, h: h, count: count, 
+                  hasEdge: true, isDoor: false, doorMinusW: false, doorMinusH: false, 
+                  eU1: true, eU2: true, eO1: true, eO2: true 
                 });
               }
             }
@@ -491,7 +476,7 @@
               renderParts(current.parts);
               autoSave();
               clearResults();
-              alert(`✅ Энэ хавтанд Excel-ээс ${importedParts.length} деталь амжилттай орууллаа!`);
+              alert(`✅ Excel-ээс ${importedParts.length} деталь орууллаа!`);
             }
           }
         } catch (err) {
@@ -502,7 +487,7 @@
       reader.readAsArrayBuffer(file);
     }
 
-    // --- MAXCUT ENGINE (v3.14) ---
+    // --- MAXCUT ADVANCED ENGINE (v4.0) ---
     function calculateNesting() {
       autoSave();
 
@@ -552,48 +537,26 @@
         return;
       }
 
-      let bestResult = null;
-      let minUnplacedCount = Infinity;
-      let minUsedSheets = Infinity;
-      let maxTotalEfficiency = -1;
-
+      // MaxCut Sorting Logic: PDF дээрх шиг урт болон талбайгаар нь эхэнд нь эрэмбэлэх
       let sortRules = [
-        (a, b) => (b.w * b.h - a.w * a.h),
-        (a, b) => (Math.max(b.w, b.h) - Math.max(a.w, a.h)),
-        (a, b) => (b.w + b.h) - (a.w + a.h),
-        (a, b) => (b.w - a.w) || (b.h - a.h),
-        (a, b) => (b.h - a.h) || (b.w - a.w)
+        (a, b) => (Math.max(b.w, b.h) - Math.max(a.w, a.h)), // Max dimension first (MaxCut heuristic)
+        (a, b) => (b.w * b.h - a.w * a.h),                   // Area largest first
+        (a, b) => (b.w + b.h) - (a.w + a.h)                  // Perimeter
       ];
 
-      let fitModes = ['best_area', 'best_short', 'best_long'];
-      let splitHeuristics = ['smart_split', 'min_waste', 'w_first'];
+      let bestResult = null;
+      let minUnplaced = Infinity;
+      let minSheets = Infinity;
 
       for (let sortFn of sortRules) {
-        for (let fitMode of fitModes) {
-          for (let splitHeuristic of splitHeuristics) {
-            let testList = [...basePartsList].sort(sortFn);
-            let res = runGuillotineEngine(testList, sheetW, sheetH, kerf, maxSheets, fitMode, splitHeuristic);
-            
-            let unplacedCount = res.remaining.length;
-            let usedSheets = res.sheets.length;
-            
-            let totalPlacedArea = 0;
-            res.sheets.forEach(sh => {
-              sh.forEach(p => totalPlacedArea += (p.w * p.h));
-            });
-            let totalSheetArea = usedSheets * (sheetW * sheetH);
-            let efficiency = totalSheetArea > 0 ? (totalPlacedArea / totalSheetArea) : 0;
-
-            if (unplacedCount < minUnplacedCount || 
-               (unplacedCount === minUnplacedCount && usedSheets < minUsedSheets) ||
-               (unplacedCount === minUnplacedCount && usedSheets === minUsedSheets && efficiency > maxTotalEfficiency)) {
-              
-              minUnplacedCount = unplacedCount;
-              minUsedSheets = usedSheets;
-              maxTotalEfficiency = efficiency;
-              bestResult = res;
-            }
-          }
+        let sortedParts = [...basePartsList].sort(sortFn);
+        let res = runMaxCutGuillotine(sortedParts, sheetW, sheetH, kerf, maxSheets);
+        
+        if (res.remaining.length < minUnplaced || 
+           (res.remaining.length === minUnplaced && res.sheets.length < minSheets)) {
+          minUnplaced = res.remaining.length;
+          minSheets = res.sheets.length;
+          bestResult = res;
         }
       }
 
@@ -629,7 +592,8 @@
       document.getElementById('pdfBtn').style.display = "block";
     }
 
-    function runGuillotineEngine(partsList, sheetW, sheetH, kerf, maxSheets, fitMode, splitHeuristic) {
+    // PDF дээрх MaxCut-ийн Гиллотин зүсэлтийн шулуун блокийн алгоритм
+    function runMaxCutGuillotine(partsList, sheetW, sheetH, kerf, maxSheets) {
       let remaining = [...partsList];
       let sheets = [];
 
@@ -640,65 +604,54 @@
         let i = 0;
         while (i < remaining.length) {
           let part = remaining[i];
-          let bestFitNode = null;
           let bestNodeIdx = -1;
           let bestRotated = false;
-          let minScore = Infinity;
+          let minShortWaste = Infinity;
 
           for (let n = 0; n < freeNodes.length; n++) {
             let node = freeNodes[n];
 
+            // 1. Эргүүлэхгүй өрж үзэх
             if (part.w <= node.w && part.h <= node.h) {
-              let score = getFitScore(node.w, node.h, part.w, part.h, fitMode);
-              if (score < minScore) {
-                minScore = score;
-                bestFitNode = node;
+              let waste = Math.min(node.w - part.w, node.h - part.h);
+              if (waste < minShortWaste) {
+                minShortWaste = waste;
                 bestNodeIdx = n;
                 bestRotated = false;
               }
             }
-
+            // 2. 90 градус эргүүлж өрж үзэх
             if (part.h <= node.w && part.w <= node.h) {
-              let score = getFitScore(node.w, node.h, part.h, part.w, fitMode);
-              if (score < minScore) {
-                minScore = score;
-                bestFitNode = node;
+              let waste = Math.min(node.w - part.h, node.h - part.w);
+              if (waste < minShortWaste) {
+                minShortWaste = waste;
                 bestNodeIdx = n;
                 bestRotated = true;
               }
             }
           }
 
-          if (bestFitNode) {
+          if (bestNodeIdx !== -1) {
+            let node = freeNodes.splice(bestNodeIdx, 1)[0];
             let pw = bestRotated ? part.h : part.w;
             let ph = bestRotated ? part.w : part.h;
 
-            placed.push({
-              x: bestFitNode.x,
-              y: bestFitNode.y,
-              w: pw,
-              h: ph,
-              label: part.label
-            });
+            placed.push({ x: node.x, y: node.y, w: pw, h: ph, label: part.label });
 
-            let node = freeNodes.splice(bestNodeIdx, 1)[0];
-            let wRemain = node.w - pw - kerf;
-            let hRemain = node.h - ph - kerf;
+            let remW = node.w - pw - kerf;
+            let remH = node.h - ph - kerf;
 
-            let splitHorizFirst = (wRemain > hRemain);
-
-            if (splitHorizFirst) {
-              if (wRemain > 0) freeNodes.push({ x: node.x + pw + kerf, y: node.y, w: wRemain, h: node.h });
-              if (hRemain > 0) freeNodes.push({ x: node.x, y: node.y + ph + kerf, w: pw, h: hRemain });
+            // MaxCut-ийн Гудамж үүсгэх тусгаарлалт
+            if (remW > remH) {
+              if (remW > 0) freeNodes.push({ x: node.x + pw + kerf, y: node.y, w: remW, h: node.h });
+              if (remH > 0) freeNodes.push({ x: node.x, y: node.y + ph + kerf, w: pw, h: remH });
             } else {
-              if (hRemain > 0) freeNodes.push({ x: node.x, y: node.y + ph + kerf, w: node.w, h: hRemain });
-              if (wRemain > 0) freeNodes.push({ x: node.x + pw + kerf, y: node.y, w: wRemain, h: ph });
+              if (remH > 0) freeNodes.push({ x: node.x, y: node.y + ph + kerf, w: node.w, h: remH });
+              if (remW > 0) freeNodes.push({ x: node.x + pw + kerf, y: node.y, w: remW, h: ph });
             }
 
-            freeNodes = mergeFreeNodes(freeNodes);
-
             remaining.splice(i, 1);
-            i = 0;
+            i = 0; // Тэргүүн эрэмбийн деталийг дахин шалгах
           } else {
             i++;
           }
@@ -712,17 +665,6 @@
       }
 
       return { sheets: sheets, remaining: remaining };
-    }
-
-    function mergeFreeNodes(nodes) {
-      let cleaned = nodes.filter(n => n.w > 0 && n.h > 0);
-      return cleaned;
-    }
-
-    function getFitScore(nodeW, nodeH, partW, partH, fitMode) {
-      let remW = nodeW - partW;
-      let remH = nodeH - partH;
-      return remW * remH;
     }
 
     function renderSingleSheetCanvas(sheetName, sheetW, sheetH, placedParts, sheetIndex, totalSheets) {
