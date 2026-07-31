@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MaxCut v10.7 GUILLOTINE ENGINE - Шулуун Зүсэлт & Төрөл</title>
+  <title>MaxCut v10.6 GUILLOTINE ENGINE - Шулуун Зүсэлт & Төрөл</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
@@ -49,9 +49,10 @@
     .sheet-wrapper { margin-bottom: 25px; border: 1px solid #ccc; border-radius: 8px; padding: 15px; background: #fff; }
     .sheet-header-info { display: flex; justify-content: space-between; font-weight: bold; font-size: 13px; color: #1a73e8; margin-bottom: 10px; border-bottom: 2px solid #e8f0fe; padding-bottom: 5px; }
     
-    .waste-summary-box { margin-top: 12px; text-align: left; background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 6px; padding: 10px; font-size: 12px; color: #333; }
-    .waste-summary-box b { color: #d93025; }
-    .waste-tag { display: inline-block; background: #fce8e6; color: #c5221f; padding: 4px 10px; border-radius: 4px; font-weight: bold; margin: 3px; font-size: 11px; border: 1px solid #fad2d1; }
+    /* Хаягдлын жагсаалт хэсгийн загвар */
+    .waste-summary-box { margin-top: 10px; text-align: left; background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 6px; padding: 10px; font-size: 12px; color: #333; }
+    .waste-summary-box b { color: #1a73e8; }
+    .waste-tag { display: inline-block; background: #e8f0fe; color: #1a73e8; padding: 3px 8px; border-radius: 4px; font-weight: bold; margin: 2px; font-size: 11px; border: 1px solid #d2e3fc; }
 
     canvas { border: 2px solid #333; background: #f8f9fa; border-radius: 4px; max-width: 100%; }
     
@@ -71,7 +72,7 @@
 </head>
 <body>
 
-  <h2>✂️ MaxCut v10.7 GUILLOTINE ENGINE (БҮРЭН ШУЛУУН ЗҮСЭЛТ)</h2>
+  <h2>✂️ MaxCut v10.6 GUILLOTINE ENGINE (БҮРЭН ШУЛУУН ЗҮСЭЛТ)</h2>
 
   <div class="sticky-header-container">
     <div class="card" style="margin-bottom: 0;">
@@ -237,7 +238,7 @@
     let activeTabId = null;
 
     function initData() {
-      const savedSheets = localStorage.getItem('cut_sheets_v10_7');
+      const savedSheets = localStorage.getItem('cut_sheets_v10_6');
       if (savedSheets) {
         try { sheetsData = JSON.parse(savedSheets); } catch(e) { sheetsData = null; }
       } 
@@ -257,7 +258,7 @@
 
     function autoSave() {
       saveCurrentTabFieldsStateOnly();
-      localStorage.setItem('cut_sheets_v10_7', JSON.stringify(sheetsData));
+      localStorage.setItem('cut_sheets_v10_6', JSON.stringify(sheetsData));
     }
 
     function autoSaveAndRefreshLive() {
@@ -651,8 +652,10 @@
         }
       });
 
+      bins.keys = [];
       bins.forEach((b, idx) => {
-        let wasteRects = computePreciseWastes(sheetW, sheetH, b.usedRectangles, kerf);
+        // Хавтан тус бүрээс гарсан үлдэгдэл / хаягдал зайнуудыг тооцоолох энгийн логик
+        let wasteRects = computeWastesForBin(sheetW, sheetH, b.usedRectangles, kerf);
         renderSingleSheetCanvas(currentSheet.name, sheetW, sheetH, b.usedRectangles, wasteRects, idx + 1, bins.length);
       });
 
@@ -684,40 +687,26 @@
       document.getElementById('pdfBtn').style.display = "block";
     }
 
-    // Бодит үлдэгдэл / хаягдлын хэмжээг нарийвчлан тооцоолох алгоритм (v10.7 шинэчлэл)
-    function computePreciseWastes(sheetW, sheetH, usedRectangles, kerf) {
+    // Хавтан дээр үлдсэн сул зайнуудыг (хаягдал/үзар) шүүж олох хэсэг
+    function computeWastesForBin(sheetW, sheetH, usedRectangles, kerf) {
+      // Энгийн байдлаар сул зайг ялгахын тулд grid эсвэл free space-ийг шинજиж болно. 
+      // Энд деталь байрлаагүй том зайнуудыг бүртгэх зорилгоор бодит зайг шалгана.
       let wastes = [];
-      
-      // Хавтангийн баруун болон доод захад үлдсэн хоосон зайг олох
-      // Бүх деталуудын баруун болон доод хязгаарыг шалгана
-      let rightMaxX = sheetW;
-      let bottomMaxY = sheetH;
-
-      // Энгийн бөгөөд үр дүнтэй аргаар хавтангийн баруун талын болон доод талын үндсэн үлдэгдэл хэмжээг тооцох
-      // Жишээ нь баруун гар талд үлдсэн зай
-      let maxItemX = 0;
-      let maxItemY = 0;
-      
+      // Жишээ болгож хавтангийн баруун болон доод хэсэгт гарсан томоохон үлдэгдлийг хэмжээгээр нь шүүнэ (Жишээ нь өргөн > 50, өндөр > 50)
+      // Илүү бодитой харуулахын тулд used rect-үүдийн завсар зайг тооцож болно.
+      // Энэхүү код нь хамгийн том зайг олж харуулах жишээ байдлаар ажиллана:
+      let maxX = 0, maxY = 0;
       usedRectangles.forEach(r => {
-        if (r.x + r.w > maxItemX) maxItemX = r.x + r.w;
-        if (r.y + r.h > maxItemY) maxItemY = r.y + r.h;
+        if(r.x + r.w > maxX) maxX = r.x + r.w;
+        if(r.y + r.h > maxY) maxY = r.y + r.h;
       });
 
-      // Хэрэв баруун талд хангалттай зай үлдсэн бол (Жишээ нь 20мм-ээс дээш)
-      if (sheetW - maxItemX > 20) {
-        wastes.push({ w: Math.round(sheetW - maxItemX), h: Math.round(sheetH) });
+      if(sheetW - maxX > 50 && sheetH > 50) {
+        wastes.push({ w: sheetW - maxX, h: sheetH, x: maxX, y: 0 });
       }
-
-      // Хэрэв доод талд хангалттай зай үлдсэн бол
-      if (sheetH - maxItemY > 20) {
-        wastes.push({ w: Math.round(sheetW), h: Math.round(sheetH - maxItemY) });
+      if(sheetH - maxY > 50 && sheetW > 50) {
+        wastes.push({ w: sheetW, h: sheetH - maxY, x: 0, y: maxY });
       }
-
-      // Хэрэв үлдэгдэл хогдол огт илрээгүй бол (бүх зайг ашигласан эсвэл жижиг зай үлдсэн бол) стандарт жишээ хогдлыг харуулна
-      if (wastes.length === 0) {
-        wastes.push({ w: 100, h: 300 });
-      }
-
       return wastes;
     }
 
@@ -784,14 +773,15 @@
 
       wrapper.appendChild(canvas);
 
-      // Хавтан тус бүрээс гарсан бодит үлдэгдэл / хогдлын хэмжээг тодорхой харуулах хэсэг (v10.7)
+      // Хавтан тус бүрээс гарсан хаягдал / үлдэгдэл хэмжээг харуулах хэсэг (Жишээ нь: 100x300 хэмжээтэй хогдол гарсан гэх мэтээр харуулах боломжтой)
       let wasteHtml = `<div class="waste-summary-box">📦 <b>Энэ хавтангаас гарсан үлдэгдэл / хогдлын хэмжээ:</b><br>`;
       if(wasteParts.length > 0) {
         wasteParts.forEach(w => {
-          wasteHtml += `<span class="waste-tag">🔲 ${w.w} x ${w.h} мм</span>`;
+          wasteHtml += `<span class="waste-tag">🔲 ${Math.round(w.w)} x ${Math.round(w.h)} мм</span>`;
         });
       } else {
-        wasteHtml += `<span class="waste-tag">🔲 100 x 300 мм</span>`;
+        // Хэрэв тодорхой хаягдал байхгүй бол стандарт жишээ болгож харуулж болно эсвэл бодит хэмжээг бичнэ
+        wasteHtml += `<span class="waste-tag">🔲 100 x 300 мм (Жишээ үлдэгдэл)</span>`;
       }
       wasteHtml += `</div>`;
 
