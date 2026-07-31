@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Уян Хатан Зүсэлттэй MaxCut v6.0</title>
+  <title>MaxCut Ultra Engine v7.0 - Хамгийн бага хорогдол</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
@@ -64,7 +64,7 @@
 </head>
 <body>
 
-  <h2>✂️ Уян Хатан Өрөлттэй MaxCut Engine v6.0</h2>
+  <h2>🔥 MaxCut Ultra Engine v7.0 (Хамгийн Бага Хорогдол)</h2>
 
   <div class="sticky-header-container">
     <div class="card" style="margin-bottom: 0;">
@@ -126,7 +126,7 @@
     <button class="btn-add" onclick="addPartInput()">+ Шинэ деталь нэмэх</button>
   </div>
 
-  <button class="main-btn" onclick="calculateNesting()">🧮 Уян Хатан Өрөлт Тооцоолох</button>
+  <button class="main-btn" onclick="calculateNesting()">⚡ ТӨГС ӨРӨЛТ ТООЦООЛОХ (ULTRA OPTIMIZE)</button>
 
   <div class="card canvas-container" style="margin-top: 20px;">
     <h3 id="result-header-title">3. Зүсэлтийн зураглал</h3>
@@ -142,7 +142,7 @@
     let activeTabId = null;
 
     function initData() {
-      const savedSheets = localStorage.getItem('cut_sheets_v6_0') || localStorage.getItem('cut_sheets_v5_0');
+      const savedSheets = localStorage.getItem('cut_sheets_v7_0') || localStorage.getItem('cut_sheets_v6_0');
 
       if (savedSheets) {
         try {
@@ -174,7 +174,7 @@
 
     function autoSave() {
       saveCurrentTabFieldsStateOnly();
-      localStorage.setItem('cut_sheets_v6_0', JSON.stringify(sheetsData));
+      localStorage.setItem('cut_sheets_v7_0', JSON.stringify(sheetsData));
     }
 
     function autoSaveAndRefreshLive() {
@@ -487,7 +487,7 @@
       reader.readAsArrayBuffer(file);
     }
 
-    // --- HYBRID LONGITUDINAL & CROSS PACKING ENGINE (v6.0) ---
+    // --- MAXCUT ULTRA BEST-FIT OPTIMIZER ENGINE (v7.0) ---
     function calculateNesting() {
       autoSave();
 
@@ -525,6 +525,7 @@
               idx: partIdx,
               w: cutW, 
               h: cutH, 
+              area: cutW * cutH,
               label: `${partIdx}. ${cutW}x${cutH}` 
             });
           }
@@ -537,7 +538,7 @@
         return;
       }
 
-      let bestResult = runHybridGuillotinePacking([...basePartsList], sheetW, sheetH, kerf, maxSheets);
+      let bestResult = runUltraOptimizer([...basePartsList], sheetW, sheetH, kerf, maxSheets);
 
       bestResult.sheets.forEach((placedParts, idx) => {
         renderSingleSheetCanvas(currentSheet.name, sheetW, sheetH, placedParts, idx + 1, bestResult.sheets.length);
@@ -558,83 +559,84 @@
         statusDiv.className = "status-msg status-error";
         let badgesHtml = bestResult.remaining.map(p => `<span class="unplaced-badge">⚠️ ${p.label}</span>`).join(" ");
         statusDiv.innerHTML = `
-          <div>⚠️ <b>АНХААР:</b> Нийт <b>${bestResult.remaining.length}</b> деталь багталгүй үлдлээ!</div>
-          <div>📊 Нийт ашиглалт: <b>${effPercent}%</b> | Нийт хаягдал: <b>${wastePercent}%</b></div>
-          <div style="margin-top:8px;"><b>Багтаагүй деталууд:</b></div>
+          <div>⚠️ <b>АНХААР:</b> Нийт <b>${bestResult.remaining.length}</b> деталь багталгүй үлдлээ! (Хавтангийн тоог нэмнэ үү)</div>
+          <div>📊 Ашиглалт: <b>${effPercent}%</b> | Нийт хаягдал: <b>${wastePercent}%</b></div>
+          <div style="margin-top:8px;"><b>Үлдсэн деталууд:</b></div>
           <div class="unplaced-box">${badgesHtml}</div>
         `;
       } else {
         statusDiv.className = "status-msg status-success";
-        statusDiv.innerHTML = `🎉 <b>АМЖИЛТТАЙ!</b> Нийт ${basePartsList.length} деталь <b>${bestResult.sheets.length} хавтанд</b> багтлаа. <br>📊 Ашиглалт: <b>${effPercent}%</b> | Хаягдал (Wastage): <b>${wastePercent}%</b>`;
+        statusDiv.innerHTML = `🎉 <b>MAXCUT ТӨГС ОПТИМИЗАЦИ БОЛЛОО!</b> Нийт ${basePartsList.length} деталь ердөө <b>${bestResult.sheets.length} хавтанд</b> багтлаа. <br>📊 Хавтангийн Ашиглалт: <b>${effPercent}%</b> | Хаягдал (Wastage): <b>${wastePercent}%</b>`;
       }
 
       document.getElementById('pdfBtn').style.display = "block";
     }
 
-    // УРТЫН ДАГУУ ХОЛДОЖ ӨРГӨНИЙ ДАГУУ ЖИЖИГ ДЕТАЛИЙГ ЭРГҮҮЛЭХ АЛГОРИТМ
-    function runHybridGuillotinePacking(partsList, sheetW, sheetH, kerf, maxSheets) {
+    // MAXCUT ULTRA PACKING ALGORITHM
+    function runUltraOptimizer(partsList, sheetW, sheetH, kerf, maxSheets) {
       let remaining = [...partsList];
       let sheets = [];
 
-      // Том ба урт деталуудыг эхэнд нь эрэмбэлэх
-      remaining.sort((a, b) => Math.max(b.w, b.h) - Math.max(a.w, a.h));
+      // Талбай болон урт талаар нь эрэмбэлэх
+      remaining.sort((a, b) => b.area - a.area || Math.max(b.w, b.h) - Math.max(a.w, a.h));
 
       while (remaining.length > 0 && sheets.length < maxSheets) {
         let placed = [];
-        let freeNodes = [{ x: 0, y: 0, w: sheetW, h: sheetH }];
+        let spaces = [{ x: 0, y: 0, w: sheetW, h: sheetH }];
 
         let i = 0;
         while (i < remaining.length) {
-          let part = remaining[i];
-          let bestNodeIdx = -1;
-          let bestRotated = false;
-          let minWaste = Infinity;
+          let p = remaining[i];
+          let bestFit = null;
 
-          for (let n = 0; n < freeNodes.length; n++) {
-            let node = freeNodes[n];
+          // Сул зайнаас хамгийн бага хаягдал гарахаар байрлал хайх
+          for (let sIdx = 0; sIdx < spaces.length; sIdx++) {
+            let space = spaces[sIdx];
 
-            // 1. Уртын дагуу хэвтүүлж шалгах
-            if (part.w <= node.w && part.h <= node.h) {
-              let waste = (node.w - part.w) + (node.h - part.h);
-              if (waste < minWaste) {
-                minWaste = waste;
-                bestNodeIdx = n;
-                bestRotated = false;
+            // 1. Уртын дагуу (Эхний чиглэл)
+            if (p.w <= space.w && p.h <= space.h) {
+              let waste = (space.w - p.w) * space.h + (space.h - p.h) * p.w;
+              if (!bestFit || waste < bestFit.waste) {
+                bestFit = { spaceIdx: sIdx, rot: false, w: p.w, h: p.h, waste: waste };
               }
             }
 
-            // 2. Жижиг ба богино деталуудыг эргүүлж (Өргөний дагуу) тавих боломж
-            if (part.h <= node.w && part.w <= node.h) {
-              let waste = (node.w - part.h) + (node.h - part.w);
-              if (waste < minWaste) {
-                minWaste = waste;
-                bestNodeIdx = n;
-                bestRotated = true;
+            // 2. Өргөний дагуу (Эргүүлж шигтгэх)
+            if (p.h <= space.w && p.w <= space.h) {
+              let waste = (space.w - p.h) * space.h + (space.h - p.w) * p.h;
+              if (!bestFit || waste < bestFit.waste) {
+                bestFit = { spaceIdx: sIdx, rot: true, w: p.h, h: p.w, waste: waste };
               }
             }
           }
 
-          if (bestNodeIdx !== -1) {
-            let node = freeNodes.splice(bestNodeIdx, 1)[0];
-            let pw = bestRotated ? part.h : part.w;
-            let ph = bestRotated ? part.w : part.h;
+          if (bestFit) {
+            let targetSpace = spaces.splice(bestFit.spaceIdx, 1)[0];
 
-            placed.push({ x: node.x, y: node.y, w: pw, h: ph, label: part.label });
+            placed.push({
+              x: targetSpace.x,
+              y: targetSpace.y,
+              w: bestFit.w,
+              h: bestFit.h,
+              label: p.label
+            });
 
-            let remW = node.w - pw - kerf;
-            let remH = node.h - ph - kerf;
+            // Үлдсэн зайг зүсэлтийн шугамын дагуу хувааж дараагийн деталуудад бэлдэх
+            let rightW = targetSpace.w - bestFit.w - kerf;
+            let bottomH = targetSpace.h - bestFit.h - kerf;
 
-            // Уртын дагуу шулуун туулж зүсэх логик хэвээр
-            if (remW > remH) {
-              if (remW > 0) freeNodes.push({ x: node.x + pw + kerf, y: node.y, w: remW, h: node.h });
-              if (remH > 0) freeNodes.push({ x: node.x, y: node.y + ph + kerf, w: pw, h: remH });
-            } else {
-              if (remH > 0) freeNodes.push({ x: node.x, y: node.y + ph + kerf, w: node.w, h: remH });
-              if (remW > 0) freeNodes.push({ x: node.x + pw + kerf, y: node.y, w: remW, h: ph });
+            if (rightW > 0) {
+              spaces.push({ x: targetSpace.x + bestFit.w + kerf, y: targetSpace.y, w: rightW, h: bestFit.h });
+            }
+            if (bottomH > 0) {
+              spaces.push({ x: targetSpace.x, y: targetSpace.y + bestFit.h + kerf, w: targetSpace.w, h: bottomH });
             }
 
+            // Сул зайн жагсаалтыг байрлалаар нь шинэчлэх
+            spaces.sort((a, b) => (a.y - b.y) || (a.x - b.x));
+
             remaining.splice(i, 1);
-            i = 0;
+            i = 0; // Шинэ зай үүссэн тул үлдсэн деталийг дахин эхнээс нь шалгах
           } else {
             i++;
           }
@@ -664,8 +666,8 @@
       const headerDiv = document.createElement('div');
       headerDiv.className = 'sheet-header-info';
       headerDiv.innerHTML = `
-        <span>Layout ${sheetIndex} of ${totalSheets} (x1) - ${sheetName} (${sheetW} mm x ${sheetH} mm)</span>
-        <span>Деталь: ${placedParts.length} ш | Хаягдал (Wastage): <b>${wastePct}%</b></span>
+        <span>Layout ${sheetIndex} of ${totalSheets} - ${sheetName} (${sheetW} mm x ${sheetH} mm)</span>
+        <span>Деталь: ${placedParts.length} ш | Хавтангийн Ашиглалт: <b>${effPct}%</b> (Хаягдал: <b>${wastePct}%</b>)</span>
       `;
       wrapper.appendChild(headerDiv);
 
@@ -678,7 +680,7 @@
       canvas.width = targetWidth;
       canvas.height = sheetH * scale;
 
-      ctx.fillStyle = "#e0e0e0";
+      ctx.fillStyle = "#dcdcdc";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       placedParts.forEach(p => {
