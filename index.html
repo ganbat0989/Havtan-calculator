@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Хавтан Зүсэлт Тооцоолуур Pro v3.3</title>
+  <title>Хавтан Зүсэлт Тооцоолуур Pro v3.4</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
@@ -64,9 +64,8 @@
 </head>
 <body>
 
-  <h2>✂️ Хавтан Өрөлтийн Тооцоолуур Pro <span style="font-size: 14px; color: #1a73e8; font-weight: normal;">v3.3</span></h2>
+  <h2>✂️ Хавтан Өрөлтийн Тооцоолуур Pro <span style="font-size: 14px; color: #1a73e8; font-weight: normal;">v3.4</span></h2>
 
-  <!-- FREEZE / STICKY SECTION -->
   <div class="sticky-header-container">
     <div class="card" style="margin-bottom: 0;">
       <div class="tabs-header" id="tabsHeader"></div>
@@ -116,7 +115,6 @@
     </div>
   </div>
 
-  <!-- ДЕТАЛИЙН ХЕСЭГ -->
   <div class="card" style="margin-top: 15px;">
     <div class="parts-header-actions">
       <h3 id="parts-header-title">2. Зүсэх деталь хэсгүүд</h3>
@@ -144,9 +142,9 @@
     let activeTabId = null;
 
     function initData() {
-      const savedSheets = localStorage.getItem('cut_sheets_v3_3') || 
-                          localStorage.getItem('cut_sheets_v3_2') || 
-                          localStorage.getItem('cut_sheets_v3_1');
+      const savedSheets = localStorage.getItem('cut_sheets_v3_4') || 
+                          localStorage.getItem('cut_sheets_v3_3') || 
+                          localStorage.getItem('cut_sheets_v3_2');
 
       if (savedSheets) {
         try {
@@ -178,7 +176,7 @@
 
     function autoSave() {
       saveCurrentTabFieldsStateOnly();
-      localStorage.setItem('cut_sheets_v3_3', JSON.stringify(sheetsData));
+      localStorage.setItem('cut_sheets_v3_4', JSON.stringify(sheetsData));
     }
 
     function autoSaveAndRefreshLive() {
@@ -536,27 +534,32 @@
       let bestResult = null;
       let minUnplacedCount = Infinity;
 
-      // Extended sorting and optimization heuristics for tighter packing
+      // Advanced multi-heuristic sorting combinations to find the exact tight pack
       let sortRules = [
         (a, b) => (Math.max(b.w, b.h) - Math.max(a.w, a.h)) || (b.w * b.h - a.w * a.h),
         (a, b) => (b.w * b.h - a.w * a.h) || (Math.max(b.w, b.h) - Math.max(a.w, a.h)),
         (a, b) => (b.w - a.w) || (b.h - a.h),
         (a, b) => (b.h - a.h) || (b.w - a.w),
-        (a, b) => (b.w + b.h) - (a.w + a.h)
+        (a, b) => (b.w + b.h) - (a.w + a.h),
+        (a, b) => (Math.min(b.w, b.h) - Math.min(a.w, a.h))
       ];
 
-      let fitRules = ['area', 'short', 'long'];
+      let fitModes = ['area', 'short', 'long'];
+      let splitHeuristics = ['w_first', 'h_first', 'smart'];
 
       for (let sortFn of sortRules) {
-        for (let fitMode of fitRules) {
-          let testList = [...basePartsList].sort(sortFn);
-          let res = runMaxCutEngine(testList, sheetW, sheetH, kerf, maxSheets, fitMode);
-          
-          if (res.remaining.length < minUnplacedCount) {
-            minUnplacedCount = res.remaining.length;
-            bestResult = res;
-            if (minUnplacedCount === 0) break;
+        for (let fitMode of fitModes) {
+          for (let splitHeuristic of splitHeuristics) {
+            let testList = [...basePartsList].sort(sortFn);
+            let res = runOptimizedGuillotineEngine(testList, sheetW, sheetH, kerf, maxSheets, fitMode, splitHeuristic);
+            
+            if (res.remaining.length < minUnplacedCount) {
+              minUnplacedCount = res.remaining.length;
+              bestResult = res;
+              if (minUnplacedCount === 0) break;
+            }
           }
+          if (minUnplacedCount === 0) break;
         }
         if (minUnplacedCount === 0) break;
       }
@@ -584,7 +587,7 @@
       document.getElementById('pdfBtn').style.display = "block";
     }
 
-    function runMaxCutEngine(partsList, sheetW, sheetH, kerf, maxSheets, fitMode) {
+    function runOptimizedGuillotineEngine(partsList, sheetW, sheetH, kerf, maxSheets, fitMode, splitHeuristic) {
       let remaining = [...partsList];
       let sheets = [];
 
@@ -640,7 +643,15 @@
             let wRemain = node.w - pw - kerf;
             let hRemain = node.h - ph - kerf;
 
-            if (wRemain > hRemain) {
+            // Advanced Guillotine split direction heuristic to maximize consecutive small cuts
+            let splitHorizFirst = false;
+            if (splitHeuristic === 'w_first') splitHorizFirst = true;
+            else if (splitHeuristic === 'h_first') splitHorizFirst = false;
+            else {
+              splitHorizFirst = (wRemain > hRemain);
+            }
+
+            if (splitHorizFirst) {
               if (wRemain > 0) freeNodes.push({ x: node.x + pw + kerf, y: node.y, w: wRemain, h: node.h });
               if (hRemain > 0) freeNodes.push({ x: node.x, y: node.y + ph + kerf, w: pw, h: hRemain });
             } else {
