@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Хавтан Зүсэлт Тооцоолуур Pro v3.2</title>
+  <title>Хавтан Зүсэлт Тооцоолуур Pro v3.3</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
@@ -64,7 +64,7 @@
 </head>
 <body>
 
-  <h2>✂️ Хавтан Өрөлтийн Тооцоолуур Pro <span style="font-size: 14px; color: #1a73e8; font-weight: normal;">v3.2</span></h2>
+  <h2>✂️ Хавтан Өрөлтийн Тооцоолуур Pro <span style="font-size: 14px; color: #1a73e8; font-weight: normal;">v3.3</span></h2>
 
   <!-- FREEZE / STICKY SECTION -->
   <div class="sticky-header-container">
@@ -144,9 +144,9 @@
     let activeTabId = null;
 
     function initData() {
-      const savedSheets = localStorage.getItem('cut_sheets_v3_2') || 
-                          localStorage.getItem('cut_sheets_v3_1') || 
-                          localStorage.getItem('cut_sheets_v3_0');
+      const savedSheets = localStorage.getItem('cut_sheets_v3_3') || 
+                          localStorage.getItem('cut_sheets_v3_2') || 
+                          localStorage.getItem('cut_sheets_v3_1');
 
       if (savedSheets) {
         try {
@@ -163,9 +163,9 @@
             name: "Хавтан 1", 
             w: 2800, 
             h: 2070, 
-            count: 4, 
+            count: 3, 
             kerf: 5,
-            edge: 2,
+            edge: 0.8,
             doorGap: 2,
             parts: []
           }
@@ -178,7 +178,7 @@
 
     function autoSave() {
       saveCurrentTabFieldsStateOnly();
-      localStorage.setItem('cut_sheets_v3_2', JSON.stringify(sheetsData));
+      localStorage.setItem('cut_sheets_v3_3', JSON.stringify(sheetsData));
     }
 
     function autoSaveAndRefreshLive() {
@@ -268,7 +268,7 @@
         document.getElementById('sheetH').value = current.h;
         document.getElementById('sheetCount').value = current.count;
         document.getElementById('kerf').value = current.kerf !== undefined ? current.kerf : 5;
-        document.getElementById('edgeVal').value = current.edge !== undefined ? current.edge : 2;
+        document.getElementById('edgeVal').value = current.edge !== undefined ? current.edge : 0.8;
         document.getElementById('doorGap').value = current.doorGap !== undefined ? current.doorGap : 2;
 
         document.getElementById('parts-header-title').innerText = `2. "${current.name}" деталууд`;
@@ -402,9 +402,9 @@
         name: `Хавтан ${sheetsData.length + 1}`,
         w: 2800,
         h: 2070,
-        count: 4,
+        count: 3,
         kerf: 5,
-        edge: 2,
+        edge: 0.8,
         doorGap: 2,
         parts: []
       });
@@ -536,14 +536,16 @@
       let bestResult = null;
       let minUnplacedCount = Infinity;
 
+      // Extended sorting and optimization heuristics for tighter packing
       let sortRules = [
         (a, b) => (Math.max(b.w, b.h) - Math.max(a.w, a.h)) || (b.w * b.h - a.w * a.h),
-        (a, b) => (b.w * b.h - a.w * a.h),
+        (a, b) => (b.w * b.h - a.w * a.h) || (Math.max(b.w, b.h) - Math.max(a.w, a.h)),
         (a, b) => (b.w - a.w) || (b.h - a.h),
-        (a, b) => (b.h - a.h) || (b.w - a.w)
+        (a, b) => (b.h - a.h) || (b.w - a.w),
+        (a, b) => (b.w + b.h) - (a.w + a.h)
       ];
 
-      let fitRules = ['short', 'long', 'area'];
+      let fitRules = ['area', 'short', 'long'];
 
       for (let sortFn of sortRules) {
         for (let fitMode of fitRules) {
